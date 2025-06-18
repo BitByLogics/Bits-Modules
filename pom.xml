@@ -6,7 +6,7 @@
 
     <groupId>net.bitbylogic</groupId>
     <artifactId>bits-modules</artifactId>
-    <version>2024.12</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>Bit's Modules</name>
@@ -50,15 +50,11 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
-    </repositories>
-
-    <distributionManagement>
         <repository>
-            <id>github</id>
-            <name>GitHub BitByLogics Maven Packages</name>
-            <url>https://maven.pkg.github.com/bitbylogics/bits-template</url>
+            <id>aikar</id>
+            <url>https://repo.aikar.co/content/groups/aikar/</url>
         </repository>
-    </distributionManagement>
+    </repositories>
 
     <dependencies>
         <!-- Spigot -->
@@ -89,28 +85,20 @@
         <dependency>
             <groupId>net.bitbylogic</groupId>
             <artifactId>bits-utils-common</artifactId>
-            <version>2024.12</version>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Bit's Utils Bukkit -->
         <dependency>
             <groupId>net.bitbylogic</groupId>
             <artifactId>bits-utils-bukkit</artifactId>
-            <version>2024.12</version>
+            <version>1.0.0</version>
         </dependency>
 
-        <!-- Lamp Common -->
         <dependency>
-            <groupId>io.github.revxrsal</groupId>
-            <artifactId>lamp.common</artifactId>
-            <version>4.0.0-rc.2</version>
-        </dependency>
-
-        <!-- Lamp Bukkit -->
-        <dependency>
-            <groupId>io.github.revxrsal</groupId>
-            <artifactId>lamp.bukkit</artifactId>
-            <version>4.0.0-rc.2</version>
+            <groupId>co.aikar</groupId>
+            <artifactId>acf-paper</artifactId>
+            <version>0.5.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

@@ -1,5 +1,7 @@
 package net.bitbylogic.module.command;
 
+import co.aikar.commands.BaseCommand;
+import co.aikar.commands.annotation.*;
 import net.bitbylogic.module.BitsModule;
 import net.bitbylogic.module.ModuleManager;
 import net.bitbylogic.utils.message.format.Formatter;
@@ -8,21 +10,19 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.command.CommandSender;
-import revxrsal.commands.annotation.*;
-import revxrsal.commands.bukkit.annotation.CommandPermission;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@Command({"module", "mdl", "modules", "mdls"})
-@CommandPermission("bitsmodules.command")
-public class ModulesCommand {
+@CommandAlias("module|mdl|modules|mdls")
+@CommandPermission("apibylogic.command.module")
+public class ModulesCommand extends BaseCommand {
 
     @Dependency
     private ModuleManager moduleManager;
 
-    @CommandPlaceholder
+    @Default
     public void onDefault(CommandSender sender) {
         sender.sendMessage(
                 Formatter.listHeader("Module Commands", ""),
@@ -35,18 +35,23 @@ public class ModulesCommand {
     }
 
     @Subcommand("list")
-    @CommandPermission("bitsmodules.command.list")
+    @CommandPermission("apibylogic.command.module.list")
     public void onList(CommandSender sender, @Default("1") int page) {
         displayPage(sender, page);
     }
 
     @Subcommand("reload")
-    @CommandPermission("bitsmodules.command.reload")
-    public void onReload(CommandSender sender, BitsModule module) {
-        if (module == null) {
+    @CommandPermission("apibylogic.command.module.reload")
+    @CommandCompletion("@moduleIds")
+    public void onReload(CommandSender sender, String moduleId) {
+        Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
+
+        if (optionalModule.isEmpty()) {
             sender.sendMessage(Formatter.error("Modules", "Invalid module."));
             return;
         }
+
+        BitsModule module = optionalModule.get();
 
         if (!module.isEnabled()) {
             sender.sendMessage(Formatter.error("Modules", "That module isn't enabled."));
@@ -59,12 +64,17 @@ public class ModulesCommand {
     }
 
     @Subcommand("enable")
-    @CommandPermission("bitsmodules.command.enable")
-    public void onEnable(CommandSender sender, BitsModule module) {
-        if (module == null) {
+    @CommandPermission("apibylogic.command.module.enable")
+    @CommandCompletion("@moduleIds")
+    public void onEnable(CommandSender sender, String moduleId) {
+        Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
+
+        if (optionalModule.isEmpty()) {
             sender.sendMessage(Formatter.error("Modules", "Invalid module."));
             return;
         }
+
+        BitsModule module = optionalModule.get();
 
         if (module.isEnabled()) {
             sender.sendMessage(Formatter.error("Modules", "That module isn't disabled."));
@@ -76,12 +86,17 @@ public class ModulesCommand {
     }
 
     @Subcommand("disable")
-    @CommandPermission("bitsmodules.command.disable")
-    public void onDisable(CommandSender sender, BitsModule module) {
-        if (module == null) {
+    @CommandPermission("apibylogic.command.module.disable")
+    @CommandCompletion("@moduleIds")
+    public void onDisable(CommandSender sender, String moduleId) {
+        Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
+
+        if (optionalModule.isEmpty()) {
             sender.sendMessage(Formatter.error("Modules", "Invalid module."));
             return;
         }
+
+        BitsModule module = optionalModule.get();
 
         if (!module.isEnabled()) {
             sender.sendMessage(Formatter.error("Modules", "That module isn't enabled."));
@@ -93,12 +108,17 @@ public class ModulesCommand {
     }
 
     @Subcommand("debug")
-    @CommandPermission("bitsmodules.command.debug")
-    public void onDebug(CommandSender sender, BitsModule module) {
-        if (module == null) {
+    @CommandPermission("apibylogic.command.module.debug")
+    @CommandCompletion("@moduleIds")
+    public void onDebug(CommandSender sender, String moduleId) {
+        Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
+
+        if (optionalModule.isEmpty()) {
             sender.sendMessage(Formatter.error("Modules", "Invalid module."));
             return;
         }
+
+        BitsModule module = optionalModule.get();
 
         if (!module.isDebug()) {
             module.setDebug(true);
@@ -111,12 +131,17 @@ public class ModulesCommand {
     }
 
     @Subcommand("toggle")
-    @CommandPermission("bitsmodules.command.toggle")
-    public void onToggle(CommandSender sender, BitsModule module) {
-        if (module == null) {
+    @CommandPermission("apibylogic.command.module.toggle")
+    @CommandCompletion("@moduleIds")
+    public void onToggle(CommandSender sender, String moduleId) {
+        Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
+
+        if (optionalModule.isEmpty()) {
             sender.sendMessage(Formatter.error("Modules", "Invalid module."));
             return;
         }
+
+        BitsModule module = optionalModule.get();
 
         if (module.isEnabled()) {
             sender.sendMessage(Formatter.success("Modules", "Disabling module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
@@ -129,21 +154,26 @@ public class ModulesCommand {
     }
 
     @Subcommand("tasks")
-    @CommandPermission("bitsmodules.command.tasks")
-    public void onTasks(CommandSender sender, BitsModule module, @Default("1") int page) {
-        if (module == null) {
+    @CommandPermission("apibylogic.command.module.tasks")
+    @CommandCompletion("@moduleIds")
+    public void onTasks(CommandSender sender, String moduleId, @Default("1") int page) {
+        Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
+
+        if (optionalModule.isEmpty()) {
             sender.sendMessage(Formatter.error("Modules", "Invalid module."));
             return;
         }
 
-        if (module.getTasks().isEmpty()) {
+        BitsModule module = optionalModule.get();
+
+        if(module.getTasks().isEmpty()) {
             sender.sendMessage(Formatter.error("Module", module.getModuleData().getName() + " has no active tasks."));
             return;
         }
 
         List<String> lines = new ArrayList<>();
         module.getTasks().forEach(task -> {
-            if (!task.isActive()) {
+            if(!task.isActive()) {
                 return;
             }
 

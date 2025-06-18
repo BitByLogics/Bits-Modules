@@ -34,7 +34,8 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     private final List<ModuleCommand> commands = new ArrayList<>();
     private final List<ModuleTask> tasks = new ArrayList<>();
     private final List<Listener> listeners = new ArrayList<>();
-    private final List<Configurable> configurables = new ArrayList<>();
+
+    private final List<Configurable> configurables;
 
     private boolean enabled = false;
 
@@ -52,6 +53,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
 
         this.dataFolder = new File(plugin.getDataFolder() + File.separator + moduleDir);
         this.configFile = new File(getDataFolder() + File.separator + "config.yml");
+        this.configurables = new ArrayList<>();
 
         loadConfiguration();
 
@@ -174,6 +176,8 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         File tempConfigFile = new File(getDataFolder() + File.separator + name + ".yml");
 
         if (!tempConfigFile.exists()) {
+            tempConfigFile.getParentFile().mkdirs();
+
             try {
                 tempConfigFile.createNewFile();
             } catch (IOException e) {
@@ -459,7 +463,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     @Override
     public void loadConfigPaths() {
         super.loadConfigPaths();
-        configurables.forEach(Configurable::loadConfigPaths);
+        //configurables.forEach(Configurable::loadConfigPaths);
     }
 
     public void setDebug(boolean debug) {
@@ -467,9 +471,13 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
 
         List<String> debugModules = plugin.getConfig().getStringList("Debug-Modules");
 
+        if(debugModules.contains(getModuleData().getId()) && debug || !debugModules.contains(getModuleData().getId()) && !debug) {
+            return;
+        }
+
         if(!debug) {
             debugModules.remove(getModuleData().getId());
-        } else if(!debugModules.contains(getModuleData().getId())) {
+        } else {
             debugModules.add(getModuleData().getId());
         }
 

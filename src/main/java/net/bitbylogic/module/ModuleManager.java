@@ -1,5 +1,6 @@
 package net.bitbylogic.module;
 
+import co.aikar.commands.PaperCommandManager;
 import lombok.Getter;
 import lombok.NonNull;
 import net.bitbylogic.module.command.ModulesCommand;
@@ -8,10 +9,6 @@ import net.bitbylogic.utils.dependency.DependencyManager;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
-import revxrsal.commands.Lamp;
-import revxrsal.commands.bukkit.BukkitLamp;
-import revxrsal.commands.bukkit.actor.BukkitCommandActor;
-import revxrsal.commands.command.ExecutableCommand;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -22,31 +19,27 @@ public class ModuleManager {
 
     private final JavaPlugin plugin;
     private final DependencyManager dependencyManager;
-    private final Lamp<BukkitCommandActor> commandManager;
+    private final PaperCommandManager commandManager;
 
     private final HashMap<String, BitsModule> modules;
-    private final HashMap<String, List<ExecutableCommand<BukkitCommandActor>>> moduleCommands;
+    private final HashMap<Class<?>, List<Class<?>>> pendingModules = new HashMap<>();
+
     private final List<ModulePendingTask<? extends BitsModule>> pendingModuleTasks;
 
-    public ModuleManager(JavaPlugin plugin, DependencyManager dependencyManager) {
+    public ModuleManager(JavaPlugin plugin, PaperCommandManager commandManager, DependencyManager dependencyManager) {
         this.plugin = plugin;
         this.dependencyManager = dependencyManager;
-        this.commandManager = BukkitLamp.builder(plugin)
-                .dependency(ModuleManager.class, this)
-                .suggestionProviders(providers -> {
-                    providers.addProvider(BitsModule.class, context -> getModules().keySet());
-                })
-                .build();
+        this.commandManager = commandManager;
 
         this.modules = new HashMap<>();
-        this.moduleCommands = new HashMap<>();
         this.pendingModuleTasks = new ArrayList<>();
 
+        commandManager.registerDependency(getClass(), this);
         dependencyManager.registerDependency(getClass(), this);
 
         ModulesCommand modulesCommand = new ModulesCommand();
-        dependencyManager.injectDependencies(modulesCommand, false);
-        commandManager.register(modulesCommand);
+        dependencyManager.injectDependencies(modulesCommand, true);
+        commandManager.registerCommand(modulesCommand);
 
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (BitsModule module : modules.values()) {
@@ -89,18 +82,36 @@ public class ModuleManager {
                 continue;
             }
 
-            BitsModule module;
-
             try {
-                module = moduleClass.getDeclaredConstructor(JavaPlugin.class, ModuleManager.class).newInstance(plugin, this);
+                BitsModule module = moduleClass.getDeclaredConstructor(JavaPlugin.class, ModuleManager.class).newInstance(plugin, this);
+                boolean missingModule = false;
+
+                StringBuilder missingModules = new StringBuilder();
+
+                for (Class<?> dependency : dependencyManager.getDependencies(module, true)) {
+                    if (!BitsModule.class.isAssignableFrom(dependency) || dependencyManager.isDependencyRegistered(dependency)) {
+                        continue;
+                    }
+
+                    pendingModules.computeIfAbsent(dependency, k -> new ArrayList<>())
+                            .add(moduleClass);
+                    missingModule = true;
+
+                    missingModules.append(", ").append(dependency.getSimpleName());
+                }
+
+                if(missingModule) {
+                    plugin.getLogger().log(Level.WARNING, "[Module Manager]: Waiting to register module: '" + moduleClass.getName() + "', it requires the following dependencies:");
+                    plugin.getLogger().log(Level.WARNING, "[Module Manager]: " + missingModules.toString().replaceFirst(", ", ""));
+                    continue;
+                }
+
+                registerModuleData(module);
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
                      InvocationTargetException e) {
                 plugin.getLogger().log(Level.SEVERE, "[Module Manager]: Couldn't create new instance of module class '" + moduleClass.getName() + "'");
                 e.printStackTrace();
-                continue;
             }
-
-            registerModuleData(module);
         }
     }
 
@@ -108,19 +119,23 @@ public class ModuleManager {
         Class<? extends BitsModule> moduleClass = module.getClass();
         long startTime = System.nanoTime();
 
+        commandManager.registerDependency(moduleClass, module);
         dependencyManager.registerDependency(moduleClass, module);
         dependencyManager.injectDependencies(module, true);
 
-        module.setDebug(plugin.getConfig().getStringList("Debug-Modules").contains(module.getModuleData().getId()));
+        if(plugin.getConfig().getStringList("Debug-Modules").contains(module.getModuleData().getId())) {
+            module.setDebug(true);
+        }
+
+        modules.put(moduleClass.getSimpleName(), module);
 
         module.onRegister();
         module.getCommands().forEach(command -> dependencyManager.injectDependencies(command, true));
-        modules.put(moduleClass.getSimpleName(), module);
 
         if (!plugin.getConfig().getStringList("Disabled-Modules").contains(module.getModuleData().getId())) {
             module.setEnabled(true);
             module.onEnable();
-            moduleCommands.put(module.getModuleData().getId(), commandManager.register(module.getCommands()));
+            module.getCommands().forEach(commandManager::registerCommand);
             Bukkit.getPluginManager().registerEvents(module, plugin);
         }
 
@@ -198,7 +213,7 @@ public class ModuleManager {
         module.reloadConfig();
         module.loadConfigPaths();
         module.onEnable();
-        moduleCommands.put(module.getModuleData().getId(), commandManager.register(module.getCommands()));
+        module.getCommands().forEach(commandManager::registerCommand);
         module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, plugin));
         Bukkit.getPluginManager().registerEvents(module, plugin);
     }
@@ -232,8 +247,7 @@ public class ModuleManager {
         module.onDisable();
         new ArrayList<>(module.getTasks()).forEach(ModuleTask::cancel);
         module.getListeners().forEach(HandlerList::unregisterAll);
-        moduleCommands.getOrDefault(module.getModuleData().getId(), new ArrayList<>()).forEach(commandManager::unregister);
-        moduleCommands.remove(module.getModuleData().getId());
+        module.getCommands().forEach(commandManager::unregisterCommand);
         HandlerList.unregisterAll(module);
     }
 
