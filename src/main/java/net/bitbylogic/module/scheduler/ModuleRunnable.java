@@ -1,4 +1,4 @@
-package net.bitbylogic.module;
+package net.bitbylogic.module.scheduler;
 
 import lombok.AccessLevel;
 import lombok.Getter;

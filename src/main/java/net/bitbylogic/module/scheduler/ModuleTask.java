@@ -1,9 +1,10 @@
-package net.bitbylogic.module;
+package net.bitbylogic.module.scheduler;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.bitbylogic.module.BitsModule;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -28,11 +29,23 @@ public abstract class ModuleTask extends ModuleRunnable {
     private int taskId = -1;
 
     public ModuleTask(@NonNull String id, @NonNull ModuleTaskType type) {
+        this(id, type, null);
+    }
+
+    public ModuleTask(@NonNull String id, @NonNull ModuleTaskType type, @Nullable ModuleRunnable runnable) {
         this.id = id;
         this.type = type;
-        this.runnable = null;
+        this.runnable = runnable;
 
-        this.bukkitRunnable = new BukkitRunnable() {
+        if (runnable != null) {
+            runnable.setTask(this);
+        }
+
+        this.bukkitRunnable = createBukkitRunnable();
+    }
+
+    private BukkitRunnable createBukkitRunnable() {
+        return new BukkitRunnable() {
             @Override
             public void run() {
                 try {
@@ -43,8 +56,14 @@ public abstract class ModuleTask extends ModuleRunnable {
                         return;
                     }
 
+                    if (runnable != null) {
+                        runnable.run();
+                        return;
+                    }
+
                     ModuleTask.this.run();
                 } catch (Exception e) {
+                    moduleInstance.getPlugin().getLogger().severe("Exception in ModuleTask '" + id + "': " + e.getMessage());
                     e.printStackTrace();
                     cancel();
                 }
@@ -57,51 +76,13 @@ public abstract class ModuleTask extends ModuleRunnable {
         };
     }
 
-    public ModuleTask(@NonNull String id, @NonNull ModuleTaskType type, @NonNull ModuleRunnable runnable) {
-        this.id = id;
-        this.type = type;
-
-        this.runnable = runnable;
-        runnable.setTask(this);
-
-        this.bukkitRunnable = new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    taskId = getTaskId();
-
-                    if (moduleInstance == null) {
-                        this.cancel();
-                        return;
-                    }
-
-                    runnable.run();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    this.cancel();
-                }
-            }
-
-            @Override
-            public synchronized void cancel() throws IllegalStateException {
-                runnable.cancel();
-            }
-        };
-    }
-
     @Override
     public void cancel() {
         if (Bukkit.getScheduler().isCurrentlyRunning(taskId) || Bukkit.getScheduler().isQueued(taskId)) {
             Bukkit.getScheduler().cancelTask(taskId);
         }
 
-        if (moduleInstance == null) {
-            return;
-        }
-
-        synchronized (moduleInstance.getTasks()) {
-            moduleInstance.getTasks().remove(this);
-        }
+        markForCleanup();
     }
 
     public boolean isActive() {
@@ -112,17 +93,24 @@ public abstract class ModuleTask extends ModuleRunnable {
         return Bukkit.getScheduler().isCurrentlyRunning(taskId) || Bukkit.getScheduler().isQueued(taskId);
     }
 
+    private void markForCleanup() {
+        if(moduleInstance == null) {
+            return;
+        }
+
+        moduleInstance.getModuleManager().scheduleCleanup(this);
+    }
+
     @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-        ModuleTask that = (ModuleTask) object;
-        return taskId == that.taskId && Objects.equals(id, that.id) && type == that.type && Objects.equals(bukkitRunnable, that.bukkitRunnable) && Objects.equals(moduleInstance, that.moduleInstance);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ModuleTask that)) return false;
+        return id.equals(that.id) && type == that.type;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, type, bukkitRunnable, moduleInstance, taskId);
+        return Objects.hash(id, type);
     }
 
     public enum ModuleTaskType {

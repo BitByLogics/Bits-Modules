@@ -4,6 +4,7 @@ import co.aikar.commands.PaperCommandManager;
 import lombok.Getter;
 import lombok.NonNull;
 import net.bitbylogic.module.command.ModulesCommand;
+import net.bitbylogic.module.scheduler.ModuleTask;
 import net.bitbylogic.module.task.ModulePendingTask;
 import net.bitbylogic.utils.dependency.DependencyManager;
 import org.bukkit.Bukkit;
@@ -12,27 +13,37 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 @Getter
 public class ModuleManager {
 
     private final JavaPlugin plugin;
+
     private final DependencyManager dependencyManager;
     private final PaperCommandManager commandManager;
 
-    private final HashMap<String, BitsModule> modules;
+    private final Set<String> disabledModules;
+    private final Set<String> debugModules;
+
+    private final Map<Class<? extends BitsModule>, BitsModule> modulesByClass = new HashMap<>();
+    private final HashMap<String, BitsModule> modulesById = new HashMap<>();
+
     private final HashMap<Class<?>, List<Class<?>>> pendingModules = new HashMap<>();
 
-    private final List<ModulePendingTask<? extends BitsModule>> pendingModuleTasks;
+    private final Set<ModuleTask> cleanupQueue = ConcurrentHashMap.newKeySet();
+
+    private final Map<Class<? extends BitsModule>, List<ModulePendingTask<? extends BitsModule>>> pendingTasksByModule = new HashMap<>();
 
     public ModuleManager(JavaPlugin plugin, PaperCommandManager commandManager, DependencyManager dependencyManager) {
         this.plugin = plugin;
+
         this.dependencyManager = dependencyManager;
         this.commandManager = commandManager;
 
-        this.modules = new HashMap<>();
-        this.pendingModuleTasks = new ArrayList<>();
+        this.disabledModules = new HashSet<>(plugin.getConfig().getStringList("Disabled-Modules"));
+        this.debugModules = new HashSet<>(plugin.getConfig().getStringList("Debug-Modules"));
 
         commandManager.registerDependency(getClass(), this);
         dependencyManager.registerDependency(getClass(), this);
@@ -42,31 +53,21 @@ public class ModuleManager {
         commandManager.registerCommand(modulesCommand);
 
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            for (BitsModule module : modules.values()) {
-                if (module.getTasks().isEmpty()) {
-                    continue;
-                }
+            Iterator<ModuleTask> iterator = cleanupQueue.iterator();
 
-                synchronized (module.getTasks()) {
-                    Iterator<ModuleTask> moduleTaskIterator = module.getTasks().iterator();
+            while (iterator.hasNext()) {
+                ModuleTask task = iterator.next();
+                BitsModule module = task.getModuleInstance();
 
-                    while (moduleTaskIterator.hasNext()) {
-                        ModuleTask task = moduleTaskIterator.next();
-
-                        if (task == null) {
-                            moduleTaskIterator.remove();
-                            continue;
-                        }
-
-                        if (task.getTaskId() == -1 || task.isActive()) {
-                            continue;
-                        }
-
-                        moduleTaskIterator.remove();
+                if (module != null) {
+                    synchronized (module.getScheduler().getTasks()) {
+                        module.getScheduler().getTasks().remove(task);
                     }
                 }
+
+                iterator.remove();
             }
-        }, 0, 20 * 30);
+        }, 0L, 20L * 30L);
     }
 
     /**
@@ -77,7 +78,7 @@ public class ModuleManager {
     @SafeVarargs
     public final void registerModule(Class<? extends BitsModule>... classes) {
         for (Class<? extends BitsModule> moduleClass : classes) {
-            if (modules.get(moduleClass.getSimpleName()) != null) {
+            if (modulesByClass.get(moduleClass) != null) {
                 plugin.getLogger().log(Level.WARNING, "[Module Manager]: Couldn't register module '" + moduleClass.getSimpleName() + "', this module is already registered.");
                 continue;
             }
@@ -123,24 +124,33 @@ public class ModuleManager {
         dependencyManager.registerDependency(moduleClass, module);
         dependencyManager.injectDependencies(module, true);
 
-        if(plugin.getConfig().getStringList("Debug-Modules").contains(module.getModuleData().getId())) {
+        if(debugModules.contains(module.getModuleData().getId())) {
             module.setDebug(true);
         }
 
-        modules.put(moduleClass.getSimpleName(), module);
+        modulesByClass.put(moduleClass, module);
+        modulesById.put(module.getModuleData().getId().toLowerCase(), module);
 
         module.onRegister();
         module.getCommands().forEach(command -> dependencyManager.injectDependencies(command, true));
 
-        if (!plugin.getConfig().getStringList("Disabled-Modules").contains(module.getModuleData().getId())) {
+        if (!disabledModules.contains(module.getModuleData().getId())) {
             module.setEnabled(true);
             module.onEnable();
             module.getCommands().forEach(commandManager::registerCommand);
             Bukkit.getPluginManager().registerEvents(module, plugin);
         }
 
-        getPendingTasks(moduleClass).forEach(task -> task.accept(module));
-        pendingModuleTasks.removeIf(task -> task.getClazz().equals(moduleClass));
+        pendingTasksByModule
+                .getOrDefault(moduleClass, Collections.emptyList())
+                .forEach(task -> {
+                    @SuppressWarnings("unchecked")
+                    ModulePendingTask<BitsModule> castedTask = (ModulePendingTask<BitsModule>) task;
+
+                    castedTask.accept(module);
+                });
+
+        pendingTasksByModule.remove(moduleClass);
 
         long endTime = System.nanoTime();
         plugin.getLogger().log(Level.INFO, "[Module Manager]: Registration time for module (" + module.getModuleData().getName() + "): " + (endTime - startTime) / 1000000d + "ms");
@@ -153,13 +163,7 @@ public class ModuleManager {
      * @return {@code true} if the Module is registered.
      */
     public boolean isRegistered(Class<? extends BitsModule> clazz) {
-        for (BitsModule module : modules.values()) {
-            if (module.getClass() == clazz) {
-                return true;
-            }
-        }
-
-        return false;
+        return modulesByClass.containsKey(clazz);
     }
 
     /**
@@ -169,19 +173,7 @@ public class ModuleManager {
      * @return An instance of the Module.
      */
     public <T extends BitsModule> Optional<T> getModuleInstance(Class<T> clazz) {
-        for (BitsModule module : modules.values()) {
-            if (module.getClass() != clazz) {
-                continue;
-            }
-
-            try {
-                return Optional.of((T) module);
-            } catch (ClassCastException e) {
-                return Optional.empty();
-            }
-        }
-
-        return Optional.empty();
+        return Optional.ofNullable((T) modulesByClass.get(clazz));
     }
 
     /**
@@ -203,7 +195,6 @@ public class ModuleManager {
             return;
         }
 
-        List<String> disabledModules = plugin.getConfig().getStringList("Disabled-Modules");
         disabledModules.remove(module.getModuleData().getId());
 
         plugin.getConfig().set("Disabled-Modules", disabledModules);
@@ -237,7 +228,6 @@ public class ModuleManager {
             return;
         }
 
-        List<String> disabledModules = plugin.getConfig().getStringList("Disabled-Modules");
         disabledModules.add(module.getModuleData().getId());
 
         plugin.getConfig().set("Disabled-Modules", disabledModules);
@@ -245,7 +235,7 @@ public class ModuleManager {
 
         module.setEnabled(false);
         module.onDisable();
-        new ArrayList<>(module.getTasks()).forEach(ModuleTask::cancel);
+        new ArrayList<>(module.getScheduler().getTasks()).forEach(ModuleTask::cancel);
         module.getListeners().forEach(HandlerList::unregisterAll);
         module.getCommands().forEach(commandManager::unregisterCommand);
         HandlerList.unregisterAll(module);
@@ -257,20 +247,12 @@ public class ModuleManager {
      * @param id The Module's ID.
      * @return The Module instance.
      */
-    public Optional<BitsModule> getModuleByID(String id) {
-        return modules.values().stream().filter(module -> module.getModuleData().getId().equalsIgnoreCase(id)).findFirst();
+    public Optional<BitsModule> getModuleByID(@NonNull String id) {
+        return Optional.ofNullable(modulesById.get(id.toLowerCase()));
     }
 
-    private <T extends BitsModule> List<ModulePendingTask<BitsModule>> getPendingTasks(Class<T> moduleClass) {
-        List<ModulePendingTask<BitsModule>> tasks = new ArrayList<>();
-        for (ModulePendingTask<? extends BitsModule> task : pendingModuleTasks) {
-            if (moduleClass.isAssignableFrom(task.getClazz())) {
-                @SuppressWarnings("unchecked")
-                ModulePendingTask<BitsModule> castedTask = (ModulePendingTask<BitsModule>) task;
-                tasks.add(castedTask);
-            }
-        }
-        return tasks;
+    public void scheduleCleanup(@NonNull ModuleTask task) {
+        cleanupQueue.add(task);
     }
 
 }

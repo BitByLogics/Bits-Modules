@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.bitbylogic.module.scheduler.ModuleScheduler;
 import net.bitbylogic.module.task.ModulePendingTask;
 import net.bitbylogic.utils.config.configurable.Configurable;
 import org.bukkit.Bukkit;
@@ -16,10 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -31,8 +30,9 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     private final File dataFolder;
     private final File configFile;
 
+    private final ModuleScheduler scheduler;
+
     private final List<ModuleCommand> commands = new ArrayList<>();
-    private final List<ModuleTask> tasks = new ArrayList<>();
     private final List<Listener> listeners = new ArrayList<>();
 
     private final List<Configurable> configurables;
@@ -47,6 +47,8 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     public BitsModule(JavaPlugin plugin, ModuleManager moduleManager) {
         this.plugin = plugin;
         this.moduleManager = moduleManager;
+
+        this.scheduler = new ModuleScheduler(this);
 
         ModuleData moduleData = getModuleData();
         String moduleDir = moduleData.getId().toLowerCase().replace(" ", "_");
@@ -198,234 +200,6 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         }
     }
 
-    public int runTask(@NonNull String id, @NonNull ModuleRunnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE, runnable) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTask(plugin);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTask(@NonNull String id, @NonNull Runnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTask(plugin);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskAsync(@NonNull String id, @NonNull ModuleRunnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE_ASYNC, runnable) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskAsynchronously(plugin);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskAsync(@NonNull String id, @NonNull Runnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE_ASYNC) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskAsynchronously(plugin);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskLater(@NonNull String id, long delay, @NonNull ModuleRunnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED, runnable) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskLater(plugin, delay);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskLater(@NonNull String id, long delay, @NonNull Runnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskLater(plugin, delay);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskTimer(@NonNull String id, long delay, long repeat, @NonNull ModuleRunnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER, runnable) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskTimer(plugin, delay, repeat);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskTimer(@NonNull String id, long delay, long repeat, @NonNull Runnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskTimer(plugin, delay, repeat);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskLaterAsync(@NonNull String id, long delay, @NonNull ModuleRunnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED_ASYNC, runnable) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskLaterAsynchronously(plugin, delay);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskLaterAsync(@NonNull String id, long delay, @NonNull Runnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED_ASYNC) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskLaterAsynchronously(plugin, delay);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskTimerAsync(@NonNull String id, long delay, long repeat, @NonNull ModuleRunnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER_ASYNC, runnable) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-
-            @Override
-            public void cancel() {
-                super.cancel();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskTimerAsynchronously(plugin, delay, repeat);
-        return moduleTask.getTaskId();
-    }
-
-    public int runTaskTimerAsync(@NonNull String id, long delay, long repeat, @NonNull Runnable runnable) {
-        ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER_ASYNC) {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-
-        moduleTask.setModuleInstance(this);
-        synchronized (tasks) {
-            tasks.add(moduleTask);
-        }
-
-        moduleTask.getBukkitRunnable().runTaskTimerAsynchronously(plugin, delay, repeat);
-        return moduleTask.getTaskId();
-    }
-
-    public Set<ModuleTask> getTasksById(@NonNull String id) {
-        synchronized (tasks) {
-            return tasks.stream().filter(moduleTask -> moduleTask.getId().equalsIgnoreCase(id)).collect(Collectors.toUnmodifiableSet());
-        }
-    }
-
-    public void cancelTask(@NonNull String id) {
-        synchronized (tasks) {
-            tasks.stream().filter(moduleTask -> moduleTask.getId().equalsIgnoreCase(id)).findFirst().ifPresent(task -> {
-                if(task.getRunnable() != null) {
-                    task.getRunnable().cancel();
-                    return;
-                }
-
-                task.cancel();
-            });
-        }
-    }
-
     public void log(Level level, String message) {
         plugin.getLogger().log(level, "(" + getModuleData().getName() + ") " + message);
     }
@@ -447,17 +221,21 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     }
 
     public <T extends BitsModule> void addDependencyTask(Class<T> dependency, Consumer<T> consumer) {
-        if (moduleManager.getDependencyManager().getDependencies().containsKey(dependency)) {
-            consumer.accept((T) moduleManager.getDependencyManager().getDependencies().get(dependency));
+        BitsModule existingModule = (BitsModule) moduleManager.getDependencyManager().getDependencies().get(dependency);
+
+        if (existingModule != null) {
+            consumer.accept(dependency.cast(existingModule));
             return;
         }
 
-        moduleManager.getPendingModuleTasks().add(new ModulePendingTask<>(dependency) {
-            @Override
-            public void accept(T module) {
-                consumer.accept(module);
-            }
-        });
+        moduleManager.getPendingTasksByModule()
+                .computeIfAbsent(dependency, k -> new ArrayList<>())
+                .add(new ModulePendingTask<T>(dependency) {
+                    @Override
+                    public void accept(T module) {
+                        consumer.accept(module);
+                    }
+                });
     }
 
     @Override

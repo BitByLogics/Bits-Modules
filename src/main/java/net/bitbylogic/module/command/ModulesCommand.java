@@ -166,13 +166,13 @@ public class ModulesCommand extends BaseCommand {
 
         BitsModule module = optionalModule.get();
 
-        if(module.getTasks().isEmpty()) {
+        if(module.getScheduler().getTasks().isEmpty()) {
             sender.sendMessage(Formatter.error("Module", module.getModuleData().getName() + " has no active tasks."));
             return;
         }
 
         List<String> lines = new ArrayList<>();
-        module.getTasks().forEach(task -> {
+        module.getScheduler().getTasks().forEach(task -> {
             if(!task.isActive()) {
                 return;
             }
@@ -184,7 +184,7 @@ public class ModulesCommand extends BaseCommand {
     }
 
     private void displayPage(CommandSender sender, int page) {
-        List<BitsModule> modules = new ArrayList<>(moduleManager.getModules().values());
+        List<BitsModule> modules = new ArrayList<>(moduleManager.getModulesById().values());
         int pages = modules.size() / 10.0d % 1 == 0 ? modules.size() / 10 : modules.size() / 10 + 1;
         int lastPossibleModule = modules.size();
 
