@@ -35,13 +35,13 @@ public class ModulesCommand extends BaseCommand {
     }
 
     @Subcommand("list")
-    @CommandPermission("apibylogic.command.module.list")
+    @CommandPermission("bitsmodules.command.module.list")
     public void onList(CommandSender sender, @Default("1") int page) {
         displayPage(sender, page);
     }
 
     @Subcommand("reload")
-    @CommandPermission("apibylogic.command.module.reload")
+    @CommandPermission("bitsmodules.command.module.reload")
     @CommandCompletion("@moduleIds")
     public void onReload(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
@@ -64,7 +64,7 @@ public class ModulesCommand extends BaseCommand {
     }
 
     @Subcommand("enable")
-    @CommandPermission("apibylogic.command.module.enable")
+    @CommandPermission("bitsmodules.command.module.enable")
     @CommandCompletion("@moduleIds")
     public void onEnable(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
@@ -86,7 +86,7 @@ public class ModulesCommand extends BaseCommand {
     }
 
     @Subcommand("disable")
-    @CommandPermission("apibylogic.command.module.disable")
+    @CommandPermission("bitsmodules.command.module.disable")
     @CommandCompletion("@moduleIds")
     public void onDisable(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
@@ -108,7 +108,7 @@ public class ModulesCommand extends BaseCommand {
     }
 
     @Subcommand("debug")
-    @CommandPermission("apibylogic.command.module.debug")
+    @CommandPermission("bitsmodules.command.module.debug")
     @CommandCompletion("@moduleIds")
     public void onDebug(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
@@ -131,7 +131,7 @@ public class ModulesCommand extends BaseCommand {
     }
 
     @Subcommand("toggle")
-    @CommandPermission("apibylogic.command.module.toggle")
+    @CommandPermission("bitsmodules.command.module.toggle")
     @CommandCompletion("@moduleIds")
     public void onToggle(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
@@ -154,7 +154,7 @@ public class ModulesCommand extends BaseCommand {
     }
 
     @Subcommand("tasks")
-    @CommandPermission("apibylogic.command.module.tasks")
+    @CommandPermission("bitsmodules.command.module.tasks")
     @CommandCompletion("@moduleIds")
     public void onTasks(CommandSender sender, String moduleId, @Default("1") int page) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
@@ -166,14 +166,14 @@ public class ModulesCommand extends BaseCommand {
 
         BitsModule module = optionalModule.get();
 
-        if (module.getTasks().isEmpty()) {
+        if(module.getTasks().isEmpty()) {
             sender.sendMessage(Formatter.error("Module", module.getModuleData().getName() + " has no active tasks."));
             return;
         }
 
         List<String> lines = new ArrayList<>();
         module.getTasks().forEach(task -> {
-            if (!task.isActive()) {
+            if(!task.isActive()) {
                 return;
             }
 
