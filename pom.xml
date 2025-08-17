@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.34</version>
+            <version>1.18.38</version>
             <scope>provided</scope>
         </dependency>
 
@@ -85,14 +85,14 @@
         <dependency>
             <groupId>net.bitbylogic</groupId>
             <artifactId>bits-utils-common</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <!-- Bit's Utils Bukkit -->
         <dependency>
             <groupId>net.bitbylogic</groupId>
             <artifactId>bits-utils-bukkit</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>
