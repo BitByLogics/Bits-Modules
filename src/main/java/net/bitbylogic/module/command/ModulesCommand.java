@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @CommandAlias("module|mdl|modules|mdls")
-@CommandPermission("apibylogic.command.module")
+@CommandPermission("bitsmodules.command.module")
 public class ModulesCommand extends BaseCommand {
 
     @Dependency
@@ -166,14 +166,14 @@ public class ModulesCommand extends BaseCommand {
 
         BitsModule module = optionalModule.get();
 
-        if(module.getTasks().isEmpty()) {
+        if (module.getTasks().isEmpty()) {
             sender.sendMessage(Formatter.error("Module", module.getModuleData().getName() + " has no active tasks."));
             return;
         }
 
         List<String> lines = new ArrayList<>();
         module.getTasks().forEach(task -> {
-            if(!task.isActive()) {
+            if (!task.isActive()) {
                 return;
             }
 
