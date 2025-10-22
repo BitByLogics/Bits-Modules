@@ -4,11 +4,14 @@ import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import net.bitbylogic.module.BitsModule;
 import net.bitbylogic.module.ModuleManager;
+import net.bitbylogic.module.event.ModuleDisableEvent;
+import net.bitbylogic.module.event.ModuleReloadEvent;
 import net.bitbylogic.utils.message.format.Formatter;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
@@ -61,6 +64,9 @@ public class ModulesCommand extends BaseCommand {
         module.reloadConfig();
         module.loadConfigPaths();
         module.onReload();
+
+        ModuleReloadEvent reloadEvent = new ModuleReloadEvent(module);
+        Bukkit.getPluginManager().callEvent(reloadEvent);
     }
 
     @Subcommand("enable")

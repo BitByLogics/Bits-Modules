@@ -4,6 +4,8 @@ import co.aikar.commands.PaperCommandManager;
 import lombok.Getter;
 import lombok.NonNull;
 import net.bitbylogic.module.command.ModulesCommand;
+import net.bitbylogic.module.event.ModuleDisableEvent;
+import net.bitbylogic.module.event.ModuleEnableEvent;
 import net.bitbylogic.module.scheduler.ModuleTask;
 import net.bitbylogic.module.task.ModulePendingTask;
 import net.bitbylogic.utils.dependency.DependencyManager;
@@ -144,6 +146,9 @@ public class ModuleManager {
             module.onEnable();
             module.getCommands().forEach(commandManager::registerCommand);
             Bukkit.getPluginManager().registerEvents(module, plugin);
+
+            ModuleEnableEvent enableEvent = new ModuleEnableEvent(module);
+            Bukkit.getPluginManager().callEvent(enableEvent);
         }
 
         pendingTasksByModule
@@ -213,6 +218,9 @@ public class ModuleManager {
         module.getCommands().forEach(commandManager::registerCommand);
         module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, plugin));
         Bukkit.getPluginManager().registerEvents(module, plugin);
+
+        ModuleEnableEvent enableEvent = new ModuleEnableEvent(module);
+        Bukkit.getPluginManager().callEvent(enableEvent);
     }
 
     /**
@@ -245,6 +253,9 @@ public class ModuleManager {
         module.getListeners().forEach(HandlerList::unregisterAll);
         module.getCommands().forEach(commandManager::unregisterCommand);
         HandlerList.unregisterAll(module);
+
+        ModuleDisableEvent disableEvent = new ModuleDisableEvent(module);
+        Bukkit.getPluginManager().callEvent(disableEvent);
     }
 
     /**
