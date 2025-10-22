@@ -7,6 +7,7 @@ import lombok.Setter;
 import net.bitbylogic.module.scheduler.ModuleScheduler;
 import net.bitbylogic.module.task.ModulePendingTask;
 import net.bitbylogic.utils.config.configurable.Configurable;
+import net.bitbylogic.utils.message.format.Formatter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Listener;
@@ -201,7 +202,19 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     }
 
     public void log(Level level, String message) {
-        plugin.getLogger().log(level, "(" + getModuleData().getName() + ") " + message);
+        switch (level.getName()) {
+            case "SEVERE":
+                plugin.getLogger().severe(Formatter.translateForConsole(String.format("&8[&9%s&8] &c%s", getModuleData().getName(), message)));
+                break;
+            case "WARNING":
+                plugin.getLogger().warning(Formatter.translateForConsole(String.format("&8[&9%s&8] &e%s", getModuleData().getName(), message)));
+            case "INFO":
+                plugin.getLogger().info(Formatter.translateForConsole(String.format("&8[&9%s&8] &2%s", getModuleData().getName(), message)));
+                break;
+            default:
+                plugin.getLogger().log(level, Formatter.translateForConsole(String.format("&8[&9%s&8] &7%s", getModuleData().getName(), message)));
+                break;
+        }
     }
 
     public void debug(Level level, String message) {
@@ -209,7 +222,19 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             return;
         }
 
-        plugin.getLogger().log(level, "(" + getModuleData().getName() + ") [DEBUG] " + message);
+        switch (level.getName()) {
+            case "SEVERE":
+                plugin.getLogger().severe(Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &c%s", getModuleData().getName(), message)));
+                break;
+            case "WARNING":
+                plugin.getLogger().warning(Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &e%s", getModuleData().getName(), message)));
+            case "INFO":
+                plugin.getLogger().info(Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &2%s", getModuleData().getName(), message)));
+                break;
+            default:
+                plugin.getLogger().log(level, Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &7%s", getModuleData().getName(), message)));
+                break;
+        }
     }
 
     public void debugBroadcast(String message) {

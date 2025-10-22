@@ -7,6 +7,7 @@ import net.bitbylogic.module.command.ModulesCommand;
 import net.bitbylogic.module.scheduler.ModuleTask;
 import net.bitbylogic.module.task.ModulePendingTask;
 import net.bitbylogic.utils.dependency.DependencyManager;
+import net.bitbylogic.utils.message.format.Formatter;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -79,7 +80,8 @@ public class ModuleManager {
     public final void registerModule(Class<? extends BitsModule>... classes) {
         for (Class<? extends BitsModule> moduleClass : classes) {
             if (modulesByClass.get(moduleClass) != null) {
-                plugin.getLogger().log(Level.WARNING, "[Module Manager]: Couldn't register module '" + moduleClass.getSimpleName() + "', this module is already registered.");
+                plugin.getLogger().log(Level.WARNING,
+                        Formatter.translateForConsole("&8[&9Module Manager&8] &cModule '&4" + moduleClass.getName() + "&c' is already registered."));
                 continue;
             }
 
@@ -102,15 +104,18 @@ public class ModuleManager {
                 }
 
                 if(missingModule) {
-                    plugin.getLogger().log(Level.WARNING, "[Module Manager]: Waiting to register module: '" + moduleClass.getName() + "', it requires the following dependencies:");
-                    plugin.getLogger().log(Level.WARNING, "[Module Manager]: " + missingModules.toString().replaceFirst(", ", ""));
+                    plugin.getLogger().log(Level.WARNING,
+                            Formatter.translateForConsole("&8[&9Module Manager&8] &eWaiting to register module: '&6" + moduleClass.getName() + "&E', it requires the following dependencies:"));
+                    plugin.getLogger().log(Level.WARNING,
+                            Formatter.translateForConsole("&8[&9Module Manager&8] &e" + missingModules.toString().replaceFirst("&8, &e", "")));
                     continue;
                 }
 
                 registerModuleData(module);
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
                      InvocationTargetException e) {
-                plugin.getLogger().log(Level.SEVERE, "[Module Manager]: Couldn't create new instance of module class '" + moduleClass.getName() + "'");
+                plugin.getLogger().log(Level.SEVERE,
+                        Formatter.translateForConsole("&8[&9Module Manager&8] &cCouldn't create new instance of module class '&4" + moduleClass.getName() + "&c'"));
                 e.printStackTrace();
             }
         }
@@ -153,7 +158,8 @@ public class ModuleManager {
         pendingTasksByModule.remove(moduleClass);
 
         long endTime = System.nanoTime();
-        plugin.getLogger().log(Level.INFO, "[Module Manager]: Registration time for module (" + module.getModuleData().getName() + "): " + (endTime - startTime) / 1000000d + "ms");
+        plugin.getLogger().log(Level.INFO,
+                Formatter.translateForConsole("&8[&9" + module.getModuleData().getName() + "&8] &2Successfully registered in &a" + (endTime - startTime) / 1000000d + "&2ms"));
     }
 
     /**
@@ -185,7 +191,7 @@ public class ModuleManager {
         Optional<BitsModule> optionalModule = getModuleByID(moduleID);
 
         if (optionalModule.isEmpty()) {
-            plugin.getLogger().log(Level.WARNING, "[Module Manager]: Invalid Module ID '" + moduleID + "'.");
+            plugin.getLogger().log(Level.WARNING, Formatter.translateForConsole("&8[&9Module Manager&8] &cInvalid Module ID '&4" + moduleID + "&c'."));
             return;
         }
 
@@ -218,7 +224,7 @@ public class ModuleManager {
         Optional<BitsModule> optionalModule = getModuleByID(moduleID);
 
         if (optionalModule.isEmpty()) {
-            plugin.getLogger().log(Level.WARNING, "[Module Manager]: Invalid Module ID '" + moduleID + "'.");
+            plugin.getLogger().log(Level.WARNING, Formatter.translateForConsole("&8[&9Module Manager&8] &cInvalid Module ID '&4" + moduleID + "&c'."));
             return;
         }
 
