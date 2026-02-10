@@ -6,12 +6,8 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public abstract class ModuleCommand extends BaseCommand {
+public abstract class ModuleCommand<M> extends BaseCommand {
 
-    private BitsModule module;
-
-    public <O extends BitsModule> O getModuleAs(Class<O> moduleClass) {
-        return (O) module;
-    }
+    private M module;
 
 }

@@ -4,13 +4,14 @@ import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import net.bitbylogic.module.BitsModule;
 import net.bitbylogic.module.ModuleManager;
-import net.bitbylogic.module.event.ModuleDisableEvent;
 import net.bitbylogic.module.event.ModuleReloadEvent;
-import net.bitbylogic.utils.message.format.Formatter;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
+import net.bitbylogic.module.message.ModuleMessages;
+import net.bitbylogic.module.scheduler.ModuleTask;
+import net.bitbylogic.utils.message.MessageUtil;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
@@ -27,14 +28,7 @@ public class ModulesCommand extends BaseCommand {
 
     @Default
     public void onDefault(CommandSender sender) {
-        sender.sendMessage(
-                Formatter.listHeader("Module Commands", ""),
-                Formatter.command("module list <page>", "List all modules."),
-                Formatter.command("module reload <id>", "Reload the specified module's config."),
-                Formatter.command("module enable <id>", "Enable the specified module."),
-                Formatter.command("module disable <id>", "Disable the specified module."),
-                Formatter.command("module toggle <id>", "Toggles the specified module.")
-        );
+        ModuleMessages.HELP.send(MessageUtil.asAudience(sender));
     }
 
     @Subcommand("list")
@@ -48,25 +42,29 @@ public class ModulesCommand extends BaseCommand {
     @CommandCompletion("@moduleIds")
     public void onReload(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
-
         if (optionalModule.isEmpty()) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid module."));
+            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
         BitsModule module = optionalModule.get();
 
         if (!module.isEnabled()) {
-            sender.sendMessage(Formatter.error("Modules", "That module isn't enabled."));
+            ModuleMessages.MODULE_NOT_ENABLED.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
+            return;
         }
 
-        sender.sendMessage(Formatter.success("Modules", String.format("Reloading module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId())));
+        ModuleMessages.RELOADING_MODULE.send(MessageUtil.asAudience(sender),
+                Placeholder.unparsed("name", module.getModuleData().name()),
+                Placeholder.unparsed("id", module.getModuleData().id())
+        );
+
         module.reloadConfig();
         module.loadConfigPaths();
         module.onReload();
-
-        ModuleReloadEvent reloadEvent = new ModuleReloadEvent(module);
-        Bukkit.getPluginManager().callEvent(reloadEvent);
+        Bukkit.getPluginManager().callEvent(new ModuleReloadEvent(module));
     }
 
     @Subcommand("enable")
@@ -74,21 +72,26 @@ public class ModulesCommand extends BaseCommand {
     @CommandCompletion("@moduleIds")
     public void onEnable(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
-
         if (optionalModule.isEmpty()) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid module."));
+            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
         BitsModule module = optionalModule.get();
 
         if (module.isEnabled()) {
-            sender.sendMessage(Formatter.error("Modules", "That module isn't disabled."));
+            ModuleMessages.MODULE_ALREADY_ENABLED.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
-        sender.sendMessage(Formatter.success("Modules", "Enabling module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
-        moduleManager.enableModule(module.getModuleData().getId());
+        ModuleMessages.ENABLING_MODULE.send(MessageUtil.asAudience(sender),
+                Placeholder.unparsed("name", module.getModuleData().name()),
+                Placeholder.unparsed("id", module.getModuleData().id())
+        );
+
+        moduleManager.enableModule(module.getModuleData().id());
     }
 
     @Subcommand("disable")
@@ -96,21 +99,26 @@ public class ModulesCommand extends BaseCommand {
     @CommandCompletion("@moduleIds")
     public void onDisable(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
-
         if (optionalModule.isEmpty()) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid module."));
+            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
         BitsModule module = optionalModule.get();
 
         if (!module.isEnabled()) {
-            sender.sendMessage(Formatter.error("Modules", "That module isn't enabled."));
+            ModuleMessages.MODULE_NOT_ENABLED.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
-        sender.sendMessage(Formatter.success("Modules", "Disabling module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
-        moduleManager.disableModule(module.getModuleData().getId());
+        ModuleMessages.DISABLING_MODULE.send(MessageUtil.asAudience(sender),
+                Placeholder.unparsed("name", module.getModuleData().name()),
+                Placeholder.unparsed("id", module.getModuleData().id())
+        );
+
+        moduleManager.disableModule(module.getModuleData().id());
     }
 
     @Subcommand("debug")
@@ -118,9 +126,9 @@ public class ModulesCommand extends BaseCommand {
     @CommandCompletion("@moduleIds")
     public void onDebug(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
-
         if (optionalModule.isEmpty()) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid module."));
+            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
@@ -128,12 +136,15 @@ public class ModulesCommand extends BaseCommand {
 
         if (!module.isDebug()) {
             module.setDebug(true);
-            sender.sendMessage(Formatter.success("Modules", "Enabling debug for module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
-            return;
+            ModuleMessages.DEBUG_ENABLE_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("name", module.getModuleData().name()),
+                    Placeholder.unparsed("id", module.getModuleData().id()));
+        } else {
+            module.setDebug(false);
+            ModuleMessages.DEBUG_DISABLE_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("name", module.getModuleData().name()),
+                    Placeholder.unparsed("id", module.getModuleData().id()));
         }
-
-        module.setDebug(false);
-        sender.sendMessage(Formatter.success("Modules", "Disabling debug for module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
     }
 
     @Subcommand("toggle")
@@ -141,22 +152,25 @@ public class ModulesCommand extends BaseCommand {
     @CommandCompletion("@moduleIds")
     public void onToggle(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
-
         if (optionalModule.isEmpty()) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid module."));
+            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
         BitsModule module = optionalModule.get();
 
         if (module.isEnabled()) {
-            sender.sendMessage(Formatter.success("Modules", "Disabling module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> %s<c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> %s<c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
-            moduleManager.disableModule(module.getModuleData().getId());
-            return;
+            ModuleMessages.DISABLING_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("name", module.getModuleData().name()),
+                    Placeholder.unparsed("id", module.getModuleData().id()));
+            moduleManager.disableModule(module.getModuleData().id());
+        } else {
+            ModuleMessages.ENABLING_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("name", module.getModuleData().name()),
+                    Placeholder.unparsed("id", module.getModuleData().id()));
+            moduleManager.enableModule(module.getModuleData().id());
         }
-
-        sender.sendMessage(Formatter.success("Modules", "Enabling module! <c#separator>(</c><c#success_secondary>Name</c><c#separator>:</c> <c#success_highlight>%s</c><c#separator>,</c> <c#success_secondary>ID</c><c#separator>:</c> <c#succes_highlight>%s</c><c#separator>)</c>", module.getModuleData().getName(), module.getModuleData().getId()));
-        moduleManager.enableModule(module.getModuleData().getId());
     }
 
     @Subcommand("tasks")
@@ -164,62 +178,86 @@ public class ModulesCommand extends BaseCommand {
     @CommandCompletion("@moduleIds")
     public void onTasks(CommandSender sender, String moduleId, @Default("1") int page) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
-
         if (optionalModule.isEmpty()) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid module."));
+            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", moduleId));
             return;
         }
 
         BitsModule module = optionalModule.get();
 
-        if(module.getScheduler().getTasks().isEmpty()) {
-            sender.sendMessage(Formatter.error("Module", module.getModuleData().getName() + " has no active tasks."));
+        if (module.getScheduler().getTasks().isEmpty()) {
+            ModuleMessages.NO_TASKS.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("id", module.getModuleData().name()));
             return;
         }
 
-        List<String> lines = new ArrayList<>();
-        module.getScheduler().getTasks().forEach(task -> {
-            if(!task.isActive()) {
-                return;
+        List<TextComponent> taskComponents = new ArrayList<>();
+
+        for (ModuleTask task : module.getScheduler().getTasks()) {
+            if (!task.isActive()) {
+                continue;
             }
 
-            lines.add(Formatter.listItem(task.getId(), task.getType().name()));
-        });
+            taskComponents.add((TextComponent) ModuleMessages.TASK_LINE.get(Placeholder.unparsed("name", task.getId()), Placeholder.unparsed("type", task.getType().name())));
+        }
 
-        sender.sendMessage(Formatter.getPagedList(module.getModuleData().getName() + "'s Tasks", lines, page));
+        sendPagedComponents(sender, module.getModuleData().name() + "'s Tasks", taskComponents, page);
     }
 
     private void displayPage(CommandSender sender, int page) {
         List<BitsModule> modules = new ArrayList<>(moduleManager.getModulesById().values());
-        int pages = modules.size() / 10.0d % 1 == 0 ? modules.size() / 10 : modules.size() / 10 + 1;
-        int lastPossibleModule = modules.size();
+        int pages = (int) Math.ceil(modules.size() / 10.0);
 
-        if (page == 0 || page > pages) {
-            sender.sendMessage(Formatter.error("Modules", "Invalid page&8: &f%s", page));
+        if (page <= 0 || page > pages) {
+            ModuleMessages.INVALID_PAGE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("page", String.valueOf(page)));
             return;
         }
 
-        int startingModule = (page * 10) - 10;
-        int lastModule = Math.min(startingModule + 10, lastPossibleModule);
+        ModuleMessages.MODULE_LIST_HEADER.send(MessageUtil.asAudience(sender));
 
-        sender.sendMessage(Formatter.format("<c#separator>&m     </c>&r <c#separator>(</c> <c#primary>&lMODULE LIST </c><c#separator>)&m     </c>"));
+        int start = (page - 1) * 10;
+        int end = Math.min(start + 10, modules.size());
 
-        for (int i = startingModule; i < lastModule; i++) {
+        for (int i = start; i < end; i++) {
             BitsModule module = modules.get(i);
 
-            BaseComponent moduleComponent = Formatter.richFormat(
-                    "<c#separator>-</c> <c#primary>%s</c> <c#separator>(</c><c#secondary>ID</c><c#separator>:</c> <c#highlight>%s</c><c#separator>,</c> <c#secondary>Status</c><c#separator>:</c> <c#highlight>%s</c><c#separator>)</c>",
-                    module.getModuleData().getName(),
-                    module.getModuleData().getId(),
-                    Formatter.format(module.isEnabled() ? "<c#success_highlight>Enabled</c>" : "<c#error_highlight>Disabled</c>"));
+            TextComponent line = (TextComponent) ModuleMessages.MODULE_LIST_ENTRY.get(
+                            Placeholder.unparsed("name", module.getModuleData().name()),
+                            Placeholder.unparsed("id", module.getModuleData().id()),
+                            Placeholder.unparsed("status", module.isEnabled() ? "Enabled" : "Disabled")
+                    ).hoverEvent(HoverEvent.showText(MessageUtil.deserialize("<gray>" + module.getModuleData().description())))
+                    .clickEvent(ClickEvent.runCommand("/module toggle " + module.getModuleData().id()));
 
-            moduleComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Formatter.richFormat("<c#highlight>%s</c>", module.getModuleData().getDescription()))));
-            moduleComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/module toggle " + module.getModuleData().getId()));
-
-            sender.spigot().sendMessage(moduleComponent);
+            MessageUtil.send(sender, line);
         }
 
-        sender.sendMessage(Formatter.replace("<c#separator>&m        </c>&r <c#separator>(</c> <c#secondary>Page</c><c#separator>:</c> <c#highlight>%s</c><c#separator>/</c><c#highlight>%s</c> <c#separator>)&m        </c>", page, pages));
+        ModuleMessages.MODULE_LIST_FOOTER.send(MessageUtil.asAudience(sender),
+                Placeholder.unparsed("page", String.valueOf(page)),
+                Placeholder.unparsed("pages", String.valueOf(pages)));
+    }
+
+    private void sendPagedComponents(CommandSender sender, String title, List<TextComponent> components, int page) {
+        int perPage = 10;
+        int pages = (int) Math.ceil(components.size() / (double) perPage);
+
+        if (page <= 0 || page > pages) {
+            ModuleMessages.INVALID_PAGE.send(MessageUtil.asAudience(sender),
+                    Placeholder.unparsed("page", String.valueOf(page)));
+            return;
+        }
+
+        int start = (page - 1) * perPage;
+        int end = Math.min(start + perPage, components.size());
+
+        for (int i = start; i < end; i++) {
+            MessageUtil.send(sender, components.get(i));
+        }
+
+        ModuleMessages.MODULE_LIST_FOOTER.send(MessageUtil.asAudience(sender),
+                Placeholder.unparsed("page", String.valueOf(page)),
+                Placeholder.unparsed("pages", String.valueOf(pages)));
     }
 
 }

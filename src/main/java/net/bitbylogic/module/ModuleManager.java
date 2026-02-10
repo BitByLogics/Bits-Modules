@@ -6,13 +6,16 @@ import lombok.NonNull;
 import net.bitbylogic.module.command.ModulesCommand;
 import net.bitbylogic.module.event.ModuleDisableEvent;
 import net.bitbylogic.module.event.ModuleEnableEvent;
+import net.bitbylogic.module.message.ModuleMessages;
 import net.bitbylogic.module.scheduler.ModuleTask;
 import net.bitbylogic.module.task.ModulePendingTask;
+import net.bitbylogic.utils.color.ColorUtil;
 import net.bitbylogic.utils.dependency.DependencyManager;
-import net.bitbylogic.utils.message.format.Formatter;
+import net.bitbylogic.utils.message.messages.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -39,11 +42,13 @@ public class ModuleManager {
 
     private final Map<Class<? extends BitsModule>, List<ModulePendingTask<? extends BitsModule>>> pendingTasksByModule = new HashMap<>();
 
-    public ModuleManager(JavaPlugin plugin, PaperCommandManager commandManager, DependencyManager dependencyManager) {
+    public ModuleManager(@NotNull JavaPlugin plugin, @NotNull PaperCommandManager commandManager, @NotNull DependencyManager dependencyManager) {
         this.plugin = plugin;
 
-        this.dependencyManager = dependencyManager;
         this.commandManager = commandManager;
+        this.dependencyManager = dependencyManager;
+
+        Messages.registerGroup(new ModuleMessages());
 
         this.disabledModules = new HashSet<>(plugin.getConfig().getStringList("Disabled-Modules"));
         this.debugModules = new HashSet<>(plugin.getConfig().getStringList("Debug-Modules"));
@@ -83,7 +88,7 @@ public class ModuleManager {
         for (Class<? extends BitsModule> moduleClass : classes) {
             if (modulesByClass.get(moduleClass) != null) {
                 plugin.getLogger().log(Level.WARNING,
-                        Formatter.translateForConsole("&8[&9Module Manager&8] &cModule '&4" + moduleClass.getName() + "&c' is already registered."));
+                        ColorUtil.colorForConsole("&8[&9Module Manager&8] &cModule '&4" + moduleClass.getName() + "&c' is already registered."));
                 continue;
             }
 
@@ -107,9 +112,9 @@ public class ModuleManager {
 
                 if(missingModule) {
                     plugin.getLogger().log(Level.WARNING,
-                            Formatter.translateForConsole("&8[&9Module Manager&8] &eWaiting to register module: '&6" + moduleClass.getName() + "&E', it requires the following dependencies:"));
+                            ColorUtil.colorForConsole("&8[&9Module Manager&8] &eWaiting to register module: '&6" + moduleClass.getName() + "&E', it requires the following dependencies:"));
                     plugin.getLogger().log(Level.WARNING,
-                            Formatter.translateForConsole("&8[&9Module Manager&8] &e" + missingModules.toString().replaceFirst("&8, &e", "")));
+                            ColorUtil.colorForConsole("&8[&9Module Manager&8] &e" + missingModules.toString().replaceFirst("&8, &e", "")));
                     continue;
                 }
 
@@ -117,7 +122,7 @@ public class ModuleManager {
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
                      InvocationTargetException e) {
                 plugin.getLogger().log(Level.SEVERE,
-                        Formatter.translateForConsole("&8[&9Module Manager&8] &cCouldn't create new instance of module class '&4" + moduleClass.getName() + "&c'"));
+                        ColorUtil.colorForConsole("&8[&9Module Manager&8] &cCouldn't create new instance of module class '&4" + moduleClass.getName() + "&c'"));
                 e.printStackTrace();
             }
         }
@@ -131,17 +136,17 @@ public class ModuleManager {
         dependencyManager.registerDependency(moduleClass, module);
         dependencyManager.injectDependencies(module, true);
 
-        if(debugModules.contains(module.getModuleData().getId())) {
+        if(debugModules.contains(module.getModuleData().id())) {
             module.setDebug(true);
         }
 
         modulesByClass.put(moduleClass, module);
-        modulesById.put(module.getModuleData().getId().toLowerCase(), module);
+        modulesById.put(module.getModuleData().id().toLowerCase(Locale.ROOT), module);
 
         module.onRegister();
         module.getCommands().forEach(command -> dependencyManager.injectDependencies(command, true));
 
-        if (!disabledModules.contains(module.getModuleData().getId())) {
+        if (!disabledModules.contains(module.getModuleData().id())) {
             module.setEnabled(true);
             module.onEnable();
             module.getCommands().forEach(commandManager::registerCommand);
@@ -164,7 +169,7 @@ public class ModuleManager {
 
         long endTime = System.nanoTime();
         plugin.getLogger().log(Level.INFO,
-                Formatter.translateForConsole("&8[&9" + module.getModuleData().getName() + "&8] &2Successfully registered in &a" + (endTime - startTime) / 1000000d + "&2ms"));
+                ColorUtil.colorForConsole("&8[&9" + module.getModuleData().name() + "&8] &2Successfully registered in &a" + (endTime - startTime) / 1000000d + "&2ms"));
     }
 
     /**
@@ -196,7 +201,7 @@ public class ModuleManager {
         Optional<BitsModule> optionalModule = getModuleByID(moduleID);
 
         if (optionalModule.isEmpty()) {
-            plugin.getLogger().log(Level.WARNING, Formatter.translateForConsole("&8[&9Module Manager&8] &cInvalid Module ID '&4" + moduleID + "&c'."));
+            plugin.getLogger().log(Level.WARNING, ColorUtil.colorForConsole("&8[&9Module Manager&8] &cInvalid Module ID '&4" + moduleID + "&c'."));
             return;
         }
 
@@ -206,7 +211,7 @@ public class ModuleManager {
             return;
         }
 
-        disabledModules.remove(module.getModuleData().getId());
+        disabledModules.remove(module.getModuleData().id());
 
         plugin.getConfig().set("Disabled-Modules", disabledModules);
         plugin.saveConfig();
@@ -232,7 +237,7 @@ public class ModuleManager {
         Optional<BitsModule> optionalModule = getModuleByID(moduleID);
 
         if (optionalModule.isEmpty()) {
-            plugin.getLogger().log(Level.WARNING, Formatter.translateForConsole("&8[&9Module Manager&8] &cInvalid Module ID '&4" + moduleID + "&c'."));
+            plugin.getLogger().log(Level.WARNING, ColorUtil.colorForConsole("&8[&9Module Manager&8] &cInvalid Module ID '&4" + moduleID + "&c'."));
             return;
         }
 
@@ -242,7 +247,7 @@ public class ModuleManager {
             return;
         }
 
-        disabledModules.add(module.getModuleData().getId());
+        disabledModules.add(module.getModuleData().id());
 
         plugin.getConfig().set("Disabled-Modules", disabledModules);
         plugin.saveConfig();
@@ -258,14 +263,8 @@ public class ModuleManager {
         Bukkit.getPluginManager().callEvent(disableEvent);
     }
 
-    /**
-     * Get a Module instance by its ID.
-     *
-     * @param id The Module's ID.
-     * @return The Module instance.
-     */
     public Optional<BitsModule> getModuleByID(@NonNull String id) {
-        return Optional.ofNullable(modulesById.get(id.toLowerCase()));
+        return Optional.ofNullable(modulesById.get(id.toLowerCase(Locale.ROOT)));
     }
 
     public void scheduleCleanup(@NonNull ModuleTask task) {

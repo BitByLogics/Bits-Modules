@@ -6,8 +6,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.bitbylogic.module.scheduler.ModuleScheduler;
 import net.bitbylogic.module.task.ModulePendingTask;
+import net.bitbylogic.utils.color.ColorUtil;
 import net.bitbylogic.utils.config.configurable.Configurable;
-import net.bitbylogic.utils.message.format.Formatter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Listener;
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -52,7 +53,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         this.scheduler = new ModuleScheduler(this);
 
         ModuleData moduleData = getModuleData();
-        String moduleDir = moduleData.getId().toLowerCase().replace(" ", "_");
+        String moduleDir = moduleData.id().toLowerCase(Locale.ROOT).replace(" ", "_");
 
         this.dataFolder = new File(plugin.getDataFolder() + File.separator + moduleDir);
         this.configFile = new File(getDataFolder() + File.separator + "config.yml");
@@ -66,7 +67,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
 
     private void loadConfiguration() {
         ModuleData moduleData = getModuleData();
-        String moduleDir = moduleData.getId().toLowerCase().replace(" ", "_");
+        String moduleDir = moduleData.id().toLowerCase(Locale.ROOT).replace(" ", "_");
 
         if (!configFile.exists()) {
             InputStream configStream = plugin.getResource(moduleDir + "/config.yml");
@@ -114,7 +115,8 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         return defaultValue;
     }
 
-    protected <O extends BitsModule> void registerCommand(ModuleCommand... commands) {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected void registerCommand(ModuleCommand... commands) {
         for (ModuleCommand command : commands) {
             if (this.commands.contains(command)) {
                 continue;
@@ -158,7 +160,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             try {
                 file.createNewFile();
             } catch (IOException e) {
-                log(Level.WARNING, String.format("Unable to create module file '%s' for module '%s'!", name, getModuleData().getId()));
+                log(Level.WARNING, String.format("Unable to create module file '%s' for module '%s'!", name, getModuleData().id()));
             }
         }
 
@@ -204,15 +206,15 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     public void log(Level level, String message) {
         switch (level.getName()) {
             case "SEVERE":
-                plugin.getLogger().severe(Formatter.translateForConsole(String.format("&8[&9%s&8] &c%s", getModuleData().getName(), message)));
+                plugin.getLogger().severe(ColorUtil.colorForConsole(String.format("&8[&9%s&8] &c%s", getModuleData().name(), message)));
                 break;
             case "WARNING":
-                plugin.getLogger().warning(Formatter.translateForConsole(String.format("&8[&9%s&8] &e%s", getModuleData().getName(), message)));
+                plugin.getLogger().warning(ColorUtil.colorForConsole(String.format("&8[&9%s&8] &e%s", getModuleData().name(), message)));
             case "INFO":
-                plugin.getLogger().info(Formatter.translateForConsole(String.format("&8[&9%s&8] &2%s", getModuleData().getName(), message)));
+                plugin.getLogger().info(ColorUtil.colorForConsole(String.format("&8[&9%s&8] &2%s", getModuleData().name(), message)));
                 break;
             default:
-                plugin.getLogger().log(level, Formatter.translateForConsole(String.format("&8[&9%s&8] &7%s", getModuleData().getName(), message)));
+                plugin.getLogger().log(level, ColorUtil.colorForConsole(String.format("&8[&9%s&8] &7%s", getModuleData().name(), message)));
                 break;
         }
     }
@@ -224,15 +226,15 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
 
         switch (level.getName()) {
             case "SEVERE":
-                plugin.getLogger().severe(Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &c%s", getModuleData().getName(), message)));
+                plugin.getLogger().severe(ColorUtil.colorForConsole(String.format("&c[DEBUG] &8[&9%s&8] &c%s", getModuleData().name(), message)));
                 break;
             case "WARNING":
-                plugin.getLogger().warning(Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &e%s", getModuleData().getName(), message)));
+                plugin.getLogger().warning(ColorUtil.colorForConsole(String.format("&c[DEBUG] &8[&9%s&8] &e%s", getModuleData().name(), message)));
             case "INFO":
-                plugin.getLogger().info(Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &2%s", getModuleData().getName(), message)));
+                plugin.getLogger().info(ColorUtil.colorForConsole(String.format("&c[DEBUG] &8[&9%s&8] &2%s", getModuleData().name(), message)));
                 break;
             default:
-                plugin.getLogger().log(level, Formatter.translateForConsole(String.format("&c[DEBUG] &8[&9%s&8] &7%s", getModuleData().getName(), message)));
+                plugin.getLogger().log(level, ColorUtil.colorForConsole(String.format("&c[DEBUG] &8[&9%s&8] &7%s", getModuleData().name(), message)));
                 break;
         }
     }
@@ -242,7 +244,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             return;
         }
 
-        Bukkit.broadcast("(" + getModuleData().getName() + ") [DEBUG]: " + message, "apibylogic.module.debuglog");
+        Bukkit.broadcast("(" + getModuleData().name() + ") [DEBUG]: " + message, "apibylogic.module.debuglog");
     }
 
     public <T extends BitsModule> void addDependencyTask(Class<T> dependency, Consumer<T> consumer) {
@@ -274,14 +276,14 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
 
         List<String> debugModules = plugin.getConfig().getStringList("Debug-Modules");
 
-        if(debugModules.contains(getModuleData().getId()) && debug || !debugModules.contains(getModuleData().getId()) && !debug) {
+        if(debugModules.contains(getModuleData().id()) && debug || !debugModules.contains(getModuleData().id()) && !debug) {
             return;
         }
 
         if(!debug) {
-            debugModules.remove(getModuleData().getId());
+            debugModules.remove(getModuleData().id());
         } else {
-            debugModules.add(getModuleData().getId());
+            debugModules.add(getModuleData().id());
         }
 
         plugin.getConfig().set("Debug-Modules", debugModules);
