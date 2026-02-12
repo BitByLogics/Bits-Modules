@@ -78,10 +78,7 @@ public abstract class ModuleTask extends ModuleRunnable {
 
     @Override
     public void cancel() {
-        if (Bukkit.getScheduler().isCurrentlyRunning(taskId) || Bukkit.getScheduler().isQueued(taskId)) {
-            Bukkit.getScheduler().cancelTask(taskId);
-        }
-
+        Bukkit.getScheduler().cancelTask(taskId);
         markForCleanup();
     }
 
