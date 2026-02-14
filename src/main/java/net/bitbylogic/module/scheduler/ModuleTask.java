@@ -49,8 +49,6 @@ public abstract class ModuleTask extends ModuleRunnable {
             @Override
             public void run() {
                 try {
-                    taskId = getTaskId();
-
                     if (moduleInstance == null) {
                         cancel();
                         return;

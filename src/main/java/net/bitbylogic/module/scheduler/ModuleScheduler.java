@@ -31,7 +31,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTask(module.getPlugin());
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTask(module.getPlugin()).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -48,7 +48,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTask(module.getPlugin());
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTask(module.getPlugin()).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -65,7 +65,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskAsynchronously(module.getPlugin());
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskAsynchronously(module.getPlugin()).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -82,7 +82,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskAsynchronously(module.getPlugin());
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskAsynchronously(module.getPlugin()).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -99,7 +99,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskLater(module.getPlugin(), delay);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskLater(module.getPlugin(), delay).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -116,7 +116,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskLater(module.getPlugin(), delay);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskLater(module.getPlugin(), delay).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -133,7 +133,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskTimer(module.getPlugin(), delay, repeat);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskTimer(module.getPlugin(), delay, repeat).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -150,7 +150,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskTimer(module.getPlugin(), delay, repeat);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskTimer(module.getPlugin(), delay, repeat).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -167,7 +167,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskLaterAsynchronously(module.getPlugin(), delay);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskLaterAsynchronously(module.getPlugin(), delay).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -184,7 +184,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskLaterAsynchronously(module.getPlugin(), delay);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskLaterAsynchronously(module.getPlugin(), delay).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -206,7 +206,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskTimerAsynchronously(module.getPlugin(), delay, repeat);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskTimerAsynchronously(module.getPlugin(), delay, repeat).getTaskId());
         return moduleTask.getTaskId();
     }
 
@@ -223,7 +223,7 @@ public class ModuleScheduler {
             tasks.add(moduleTask);
         }
 
-        moduleTask.getBukkitRunnable().runTaskTimerAsynchronously(module.getPlugin(), delay, repeat);
+        moduleTask.setTaskId(moduleTask.getBukkitRunnable().runTaskTimerAsynchronously(module.getPlugin(), delay, repeat).getTaskId());
         return moduleTask.getTaskId();
     }
 
