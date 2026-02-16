@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.bitbylogic.module.BitsModule;
+import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -235,13 +236,16 @@ public class ModuleScheduler {
 
     public void cancelTask(@NonNull String id) {
         synchronized (tasks) {
-            tasks.stream().filter(moduleTask -> moduleTask.getId().equalsIgnoreCase(id)).findFirst().ifPresent(task -> {
-                if(task.getRunnable() != null) {
-                    task.getRunnable().cancel();
-                    return;
+            tasks.removeIf(task -> {
+                if (task.getBukkitRunnable() != null) {
+                    task.getBukkitRunnable().cancel();
                 }
 
-                task.cancel();
+                if (task.getTaskId() != -1) {
+                    Bukkit.getScheduler().cancelTask(task.getTaskId());
+                }
+
+                return task.getId().equalsIgnoreCase(id);
             });
         }
     }
