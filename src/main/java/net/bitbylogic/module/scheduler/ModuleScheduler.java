@@ -237,15 +237,16 @@ public class ModuleScheduler {
     public void cancelTask(@NonNull String id) {
         synchronized (tasks) {
             tasks.removeIf(task -> {
+                if (!task.getId().equalsIgnoreCase(id)) {
+                    return false;
+                }
+
                 if (task.getBukkitRunnable() != null) {
                     task.getBukkitRunnable().cancel();
                 }
 
-                if (task.getTaskId() != -1) {
-                    Bukkit.getScheduler().cancelTask(task.getTaskId());
-                }
-
-                return task.getId().equalsIgnoreCase(id);
+                Bukkit.getScheduler().cancelTask(task.getTaskId());
+                return true;
             });
         }
     }
