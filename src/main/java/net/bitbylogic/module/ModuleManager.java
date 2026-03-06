@@ -43,6 +43,10 @@ public class ModuleManager {
     private final Map<Class<? extends BitsModule>, List<ModulePendingTask<? extends BitsModule>>> pendingTasksByModule = new HashMap<>();
 
     public ModuleManager(@NotNull JavaPlugin plugin, @NotNull PaperCommandManager commandManager, @NotNull DependencyManager dependencyManager) {
+        this(plugin, commandManager, dependencyManager, true);
+    }
+
+    public ModuleManager(@NotNull JavaPlugin plugin, @NotNull PaperCommandManager commandManager, @NotNull DependencyManager dependencyManager, boolean registerCommand) {
         this.plugin = plugin;
 
         this.commandManager = commandManager;
@@ -56,9 +60,11 @@ public class ModuleManager {
         commandManager.registerDependency(getClass(), this);
         dependencyManager.registerDependency(getClass(), this);
 
-        ModulesCommand modulesCommand = new ModulesCommand();
-        dependencyManager.injectDependencies(modulesCommand, true);
-        commandManager.registerCommand(modulesCommand);
+        if (registerCommand) {
+            ModulesCommand modulesCommand = new ModulesCommand();
+            dependencyManager.injectDependencies(modulesCommand, true);
+            commandManager.registerCommand(modulesCommand);
+        }
 
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             Iterator<ModuleTask> iterator = cleanupQueue.iterator();
