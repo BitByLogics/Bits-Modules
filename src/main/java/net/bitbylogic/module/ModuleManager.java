@@ -30,8 +30,8 @@ public class ModuleManager {
     private final DependencyManager dependencyManager;
     private final PaperCommandManager commandManager;
 
-    private final Set<String> disabledModules;
-    private final Set<String> debugModules;
+    private final List<String> disabledModules;
+    private final List<String> debugModules;
 
     private final Map<Class<? extends BitsModule>, BitsModule> modulesByClass = new HashMap<>();
     private final HashMap<String, BitsModule> modulesById = new HashMap<>();
@@ -54,8 +54,8 @@ public class ModuleManager {
 
         Messages.registerGroup(new ModuleMessages());
 
-        this.disabledModules = new HashSet<>(plugin.getConfig().getStringList("Disabled-Modules"));
-        this.debugModules = new HashSet<>(plugin.getConfig().getStringList("Debug-Modules"));
+        this.disabledModules = plugin.getConfig().getStringList("Disabled-Modules");
+        this.debugModules = plugin.getConfig().getStringList("Debug-Modules");
 
         commandManager.registerDependency(getClass(), this);
         dependencyManager.registerDependency(getClass(), this);
