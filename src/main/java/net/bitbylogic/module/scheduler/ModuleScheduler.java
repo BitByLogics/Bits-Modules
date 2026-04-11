@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -20,6 +21,11 @@ public class ModuleScheduler {
     private final BitsModule module;
 
     public int runTask(@NonNull String id, @NonNull ModuleRunnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE, runnable) {
             @Override
             public void run() {
@@ -37,6 +43,11 @@ public class ModuleScheduler {
     }
 
     public int runTask(@NonNull String id, @NonNull Runnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE) {
             @Override
             public void run() {
@@ -54,6 +65,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskAsync(@NonNull String id, @NonNull ModuleRunnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE_ASYNC, runnable) {
             @Override
             public void run() {
@@ -71,6 +87,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskAsync(@NonNull String id, @NonNull Runnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.SINGLE_ASYNC) {
             @Override
             public void run() {
@@ -88,6 +109,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskLater(@NonNull String id, long delay, @NonNull ModuleRunnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED, runnable) {
             @Override
             public void run() {
@@ -105,6 +131,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskLater(@NonNull String id, long delay, @NonNull Runnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED) {
             @Override
             public void run() {
@@ -122,6 +153,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskTimer(@NonNull String id, long delay, long repeat, @NonNull ModuleRunnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER, runnable) {
             @Override
             public void run() {
@@ -139,6 +175,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskTimer(@NonNull String id, long delay, long repeat, @NonNull Runnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER) {
             @Override
             public void run() {
@@ -156,6 +197,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskLaterAsync(@NonNull String id, long delay, @NonNull ModuleRunnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED_ASYNC, runnable) {
             @Override
             public void run() {
@@ -173,6 +219,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskLaterAsync(@NonNull String id, long delay, @NonNull Runnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.DELAYED_ASYNC) {
             @Override
             public void run() {
@@ -190,6 +241,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskTimerAsync(@NonNull String id, long delay, long repeat, @NonNull ModuleRunnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER_ASYNC, runnable) {
             @Override
             public void run() {
@@ -212,6 +268,11 @@ public class ModuleScheduler {
     }
 
     public int runTaskTimerAsync(@NonNull String id, long delay, long repeat, @NonNull Runnable runnable) {
+        if (!module.isEnabled()) {
+            module.log(Level.WARNING, "Cannot run task '" + id + "' because module is disabled.");
+            return -1;
+        }
+
         ModuleTask moduleTask = new ModuleTask(id, ModuleTask.ModuleTaskType.TIMER_ASYNC) {
             @Override
             public void run() {
