@@ -136,7 +136,10 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             moduleManager.getDependencyManager().injectDependencies(listener, true);
             this.listeners.add(listener);
 
-            Bukkit.getServer().getPluginManager().registerEvents(listener, plugin);
+            if(enabled) {
+                Bukkit.getServer().getPluginManager().registerEvents(listener, plugin);
+            }
+
             debug(Level.INFO, String.format("Successfully registered listener: %s", listener.getClass().getSimpleName()));
         }
     }

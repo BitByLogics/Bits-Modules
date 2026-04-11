@@ -153,13 +153,15 @@ public class ModuleManager {
         module.getCommands().forEach(command -> dependencyManager.injectDependencies(command, true));
 
         if (!disabledModules.contains(module.getModuleData().id())) {
-            module.setEnabled(true);
             module.onEnable();
             module.getCommands().forEach(commandManager::registerCommand);
+            module.getListeners().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, plugin));
             Bukkit.getPluginManager().registerEvents(module, plugin);
 
             ModuleEnableEvent enableEvent = new ModuleEnableEvent(module);
             Bukkit.getPluginManager().callEvent(enableEvent);
+
+            module.setEnabled(true);
         }
 
         pendingTasksByModule
