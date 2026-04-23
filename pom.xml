@@ -114,14 +114,14 @@
         <dependency>
             <groupId>com.github.BitByLogics.Bits-Utils</groupId>
             <artifactId>bits-utils-common</artifactId>
-            <version>7e4cbad354</version>
+            <version>3b0b73be9a</version>
         </dependency>
 
         <!-- Bit's Utils Bukkit -->
         <dependency>
             <groupId>com.github.BitByLogics.Bits-Utils</groupId>
             <artifactId>bits-utils-bukkit</artifactId>
-            <version>7e4cbad354</version>
+            <version>3b0b73be9a</version>
         </dependency>
 
         <dependency>
