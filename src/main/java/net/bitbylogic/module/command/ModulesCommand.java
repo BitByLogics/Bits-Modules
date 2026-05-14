@@ -28,7 +28,7 @@ public class ModulesCommand extends BaseCommand {
 
     @Default
     public void onDefault(CommandSender sender) {
-        ModuleMessages.HELP.send(MessageUtil.asAudience(sender));
+        ModuleMessages.HELP.send(sender);
     }
 
     @Subcommand("list")
@@ -43,7 +43,7 @@ public class ModulesCommand extends BaseCommand {
     public void onReload(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
         if (optionalModule.isEmpty()) {
-            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_MODULE.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
@@ -51,12 +51,12 @@ public class ModulesCommand extends BaseCommand {
         BitsModule module = optionalModule.get();
 
         if (!module.isEnabled()) {
-            ModuleMessages.MODULE_NOT_ENABLED.send(MessageUtil.asAudience(sender),
+            ModuleMessages.MODULE_NOT_ENABLED.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
 
-        ModuleMessages.RELOADING_MODULE.send(MessageUtil.asAudience(sender),
+        ModuleMessages.RELOADING_MODULE.send(sender,
                 Placeholder.unparsed("name", module.getModuleData().name()),
                 Placeholder.unparsed("id", module.getModuleData().id())
         );
@@ -73,7 +73,7 @@ public class ModulesCommand extends BaseCommand {
     public void onEnable(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
         if (optionalModule.isEmpty()) {
-            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_MODULE.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
@@ -81,12 +81,12 @@ public class ModulesCommand extends BaseCommand {
         BitsModule module = optionalModule.get();
 
         if (module.isEnabled()) {
-            ModuleMessages.MODULE_ALREADY_ENABLED.send(MessageUtil.asAudience(sender),
+            ModuleMessages.MODULE_ALREADY_ENABLED.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
 
-        ModuleMessages.ENABLING_MODULE.send(MessageUtil.asAudience(sender),
+        ModuleMessages.ENABLING_MODULE.send(sender,
                 Placeholder.unparsed("name", module.getModuleData().name()),
                 Placeholder.unparsed("id", module.getModuleData().id())
         );
@@ -100,7 +100,7 @@ public class ModulesCommand extends BaseCommand {
     public void onDisable(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
         if (optionalModule.isEmpty()) {
-            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_MODULE.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
@@ -108,12 +108,12 @@ public class ModulesCommand extends BaseCommand {
         BitsModule module = optionalModule.get();
 
         if (!module.isEnabled()) {
-            ModuleMessages.MODULE_NOT_ENABLED.send(MessageUtil.asAudience(sender),
+            ModuleMessages.MODULE_NOT_ENABLED.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
 
-        ModuleMessages.DISABLING_MODULE.send(MessageUtil.asAudience(sender),
+        ModuleMessages.DISABLING_MODULE.send(sender,
                 Placeholder.unparsed("name", module.getModuleData().name()),
                 Placeholder.unparsed("id", module.getModuleData().id())
         );
@@ -127,7 +127,7 @@ public class ModulesCommand extends BaseCommand {
     public void onDebug(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
         if (optionalModule.isEmpty()) {
-            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_MODULE.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
@@ -136,12 +136,12 @@ public class ModulesCommand extends BaseCommand {
 
         if (!module.isDebug()) {
             module.setDebug(true);
-            ModuleMessages.DEBUG_ENABLE_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.DEBUG_ENABLE_MODULE.send(sender,
                     Placeholder.unparsed("name", module.getModuleData().name()),
                     Placeholder.unparsed("id", module.getModuleData().id()));
         } else {
             module.setDebug(false);
-            ModuleMessages.DEBUG_DISABLE_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.DEBUG_DISABLE_MODULE.send(sender,
                     Placeholder.unparsed("name", module.getModuleData().name()),
                     Placeholder.unparsed("id", module.getModuleData().id()));
         }
@@ -153,7 +153,7 @@ public class ModulesCommand extends BaseCommand {
     public void onToggle(CommandSender sender, String moduleId) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
         if (optionalModule.isEmpty()) {
-            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_MODULE.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
@@ -161,12 +161,12 @@ public class ModulesCommand extends BaseCommand {
         BitsModule module = optionalModule.get();
 
         if (module.isEnabled()) {
-            ModuleMessages.DISABLING_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.DISABLING_MODULE.send(sender,
                     Placeholder.unparsed("name", module.getModuleData().name()),
                     Placeholder.unparsed("id", module.getModuleData().id()));
             moduleManager.disableModule(module.getModuleData().id());
         } else {
-            ModuleMessages.ENABLING_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.ENABLING_MODULE.send(sender,
                     Placeholder.unparsed("name", module.getModuleData().name()),
                     Placeholder.unparsed("id", module.getModuleData().id()));
             moduleManager.enableModule(module.getModuleData().id());
@@ -179,7 +179,7 @@ public class ModulesCommand extends BaseCommand {
     public void onTasks(CommandSender sender, String moduleId, @Default("1") int page) {
         Optional<BitsModule> optionalModule = moduleManager.getModuleByID(moduleId);
         if (optionalModule.isEmpty()) {
-            ModuleMessages.INVALID_MODULE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_MODULE.send(sender,
                     Placeholder.unparsed("id", moduleId));
             return;
         }
@@ -187,7 +187,7 @@ public class ModulesCommand extends BaseCommand {
         BitsModule module = optionalModule.get();
 
         if (module.getScheduler().getTasks().isEmpty()) {
-            ModuleMessages.NO_TASKS.send(MessageUtil.asAudience(sender),
+            ModuleMessages.NO_TASKS.send(sender,
                     Placeholder.unparsed("id", module.getModuleData().name()));
             return;
         }
@@ -210,12 +210,12 @@ public class ModulesCommand extends BaseCommand {
         int pages = (int) Math.ceil(modules.size() / 10.0);
 
         if (page <= 0 || page > pages) {
-            ModuleMessages.INVALID_PAGE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_PAGE.send(sender,
                     Placeholder.unparsed("page", String.valueOf(page)));
             return;
         }
 
-        ModuleMessages.MODULE_LIST_HEADER.send(MessageUtil.asAudience(sender));
+        ModuleMessages.MODULE_LIST_HEADER.send(sender);
 
         int start = (page - 1) * 10;
         int end = Math.min(start + 10, modules.size());
@@ -233,7 +233,7 @@ public class ModulesCommand extends BaseCommand {
             MessageUtil.send(sender, line);
         }
 
-        ModuleMessages.MODULE_LIST_FOOTER.send(MessageUtil.asAudience(sender),
+        ModuleMessages.MODULE_LIST_FOOTER.send(sender,
                 Placeholder.unparsed("page", String.valueOf(page)),
                 Placeholder.unparsed("pages", String.valueOf(pages)));
     }
@@ -243,7 +243,7 @@ public class ModulesCommand extends BaseCommand {
         int pages = (int) Math.ceil(components.size() / (double) perPage);
 
         if (page <= 0 || page > pages) {
-            ModuleMessages.INVALID_PAGE.send(MessageUtil.asAudience(sender),
+            ModuleMessages.INVALID_PAGE.send(sender,
                     Placeholder.unparsed("page", String.valueOf(page)));
             return;
         }
@@ -255,7 +255,7 @@ public class ModulesCommand extends BaseCommand {
             MessageUtil.send(sender, components.get(i));
         }
 
-        ModuleMessages.MODULE_LIST_FOOTER.send(MessageUtil.asAudience(sender),
+        ModuleMessages.MODULE_LIST_FOOTER.send(sender,
                 Placeholder.unparsed("page", String.valueOf(page)),
                 Placeholder.unparsed("pages", String.valueOf(pages)));
     }
