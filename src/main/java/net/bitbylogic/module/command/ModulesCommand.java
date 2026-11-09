@@ -4,7 +4,6 @@ import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import net.bitbylogic.module.BitsModule;
 import net.bitbylogic.module.ModuleManager;
-import net.bitbylogic.module.event.ModuleReloadEvent;
 import net.bitbylogic.module.message.ModuleMessages;
 import net.bitbylogic.module.scheduler.ModuleTask;
 import net.bitbylogic.utils.message.MessageUtil;
@@ -12,10 +11,10 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,10 +60,10 @@ public class ModulesCommand extends BaseCommand {
                 Placeholder.unparsed("id", module.getModuleData().id())
         );
 
-        module.reloadConfig();
-        module.loadConfigPaths();
-        module.onReload();
-        Bukkit.getPluginManager().callEvent(new ModuleReloadEvent(module));
+        if (!moduleManager.reloadModule(module)) {
+            ModuleMessages.RELOAD_FAILED.send(sender,
+                    Placeholder.unparsed("id", module.getModuleData().id()));
+        }
     }
 
     @Subcommand("enable")
@@ -186,7 +185,9 @@ public class ModulesCommand extends BaseCommand {
 
         BitsModule module = optionalModule.get();
 
-        if (module.getScheduler().getTasks().isEmpty()) {
+        List<ModuleTask> moduleTasks = module.getScheduler().getTaskSnapshot();
+
+        if (moduleTasks.isEmpty()) {
             ModuleMessages.NO_TASKS.send(sender,
                     Placeholder.unparsed("id", module.getModuleData().name()));
             return;
@@ -194,7 +195,7 @@ public class ModulesCommand extends BaseCommand {
 
         List<TextComponent> taskComponents = new ArrayList<>();
 
-        for (ModuleTask task : module.getScheduler().getTasks()) {
+        for (ModuleTask task : moduleTasks) {
             if (!task.isActive()) {
                 continue;
             }
@@ -207,6 +208,13 @@ public class ModulesCommand extends BaseCommand {
 
     private void displayPage(CommandSender sender, int page) {
         List<BitsModule> modules = new ArrayList<>(moduleManager.getModulesById().values());
+        modules.sort(Comparator.comparing(module -> module.getModuleData().id(), String.CASE_INSENSITIVE_ORDER));
+
+        if (modules.isEmpty()) {
+            ModuleMessages.NO_MODULES.send(sender);
+            return;
+        }
+
         int pages = (int) Math.ceil(modules.size() / 10.0);
 
         if (page <= 0 || page > pages) {

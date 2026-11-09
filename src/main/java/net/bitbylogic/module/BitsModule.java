@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.bitbylogic.module.scheduler.ModuleScheduler;
-import net.bitbylogic.module.task.ModulePendingTask;
 import net.bitbylogic.utils.color.ColorUtil;
 import net.bitbylogic.utils.config.configurable.Configurable;
 import org.bukkit.Bukkit;
@@ -17,13 +16,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
 @Getter
-@Setter
 public abstract class BitsModule extends Configurable implements ModuleInterface, Listener {
 
     private final JavaPlugin plugin;
@@ -34,17 +33,24 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
 
     private final ModuleScheduler scheduler;
 
-    private final List<ModuleCommand> commands = new ArrayList<>();
+    @Getter(AccessLevel.NONE)
+    private final List<ModuleCommand<?>> commands = new ArrayList<>();
+
+    @Getter(AccessLevel.NONE)
     private final List<Listener> listeners = new ArrayList<>();
 
+    @Getter(AccessLevel.NONE)
     private final List<Configurable> configurables;
 
-    private boolean enabled = false;
+    @Setter(AccessLevel.PACKAGE)
+    private volatile boolean enabled = false;
 
-    @Setter(AccessLevel.NONE)
-    private boolean debug = false;
+    private volatile boolean debug = false;
 
-    private YamlConfiguration config;
+    private volatile YamlConfiguration config;
+
+    @Getter(AccessLevel.NONE)
+    private boolean initialized = false;
 
     public BitsModule(JavaPlugin plugin, ModuleManager moduleManager) {
         this.plugin = plugin;
@@ -58,6 +64,33 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         this.dataFolder = new File(plugin.getDataFolder() + File.separator + moduleDir);
         this.configFile = new File(getDataFolder() + File.separator + "config.yml");
         this.configurables = new ArrayList<>();
+    }
+
+    public List<ModuleCommand<?>> getCommands() {
+        return Collections.unmodifiableList(commands);
+    }
+
+    public List<Listener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
+    public List<Configurable> getConfigurables() {
+        return Collections.unmodifiableList(configurables);
+    }
+
+    void restoreRegistrations(List<ModuleCommand<?>> restoredCommands, List<Listener> restoredListeners) {
+        commands.clear();
+        commands.addAll(restoredCommands);
+        listeners.clear();
+        listeners.addAll(restoredListeners);
+    }
+
+    void initialize() {
+        if (initialized) {
+            return;
+        }
+
+        initialized = true;
 
         loadConfiguration();
 
@@ -88,8 +121,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         try {
             config.save(configFile);
         } catch (IOException e) {
-            log(Level.SEVERE, "Unable to save configuration file.");
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Unable to save configuration file for module '" + getModuleData().id() + "'.", e);
         }
     }
 
@@ -97,6 +129,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         return getConfigValueOrDefault(path, defaultValue, true);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T getConfigValueOrDefault(@NonNull String path, @NonNull T defaultValue, boolean save) {
         Object actualValue = getConfig().get(path);
 
@@ -105,14 +138,17 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             saveConfig();
         }
 
-        try {
-            return actualValue == null ? defaultValue : (T) actualValue;
-        } catch (ClassCastException e) {
-            log(Level.SEVERE, "Unable to cast config value");
-            e.printStackTrace();
+        if (actualValue == null) {
+            return defaultValue;
         }
 
-        return defaultValue;
+        if (!defaultValue.getClass().isInstance(actualValue)) {
+            log(Level.SEVERE, String.format("Config value at '%s' is a %s, expected %s. Using default.",
+                    path, actualValue.getClass().getSimpleName(), defaultValue.getClass().getSimpleName()));
+            return defaultValue;
+        }
+
+        return (T) actualValue;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -152,10 +188,16 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         configurables.add(configurable);
     }
 
-    public File getModuleFile(@NonNull String name) {
-        if(!getDataFolder().exists()) {
-            getDataFolder().mkdirs();
+    private void ensureDirectory(File directory) {
+        if (directory == null || directory.exists() || directory.mkdirs()) {
+            return;
         }
+
+        plugin.getLogger().log(Level.WARNING, "Unable to create directory '" + directory.getPath() + "' for module '" + getModuleData().id() + "'.");
+    }
+
+    public File getModuleFile(@NonNull String name) {
+        ensureDirectory(getDataFolder());
 
         File file = new File(getDataFolder() + File.separator + name);
 
@@ -163,7 +205,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             try {
                 file.createNewFile();
             } catch (IOException e) {
-                log(Level.WARNING, String.format("Unable to create module file '%s' for module '%s'!", name, getModuleData().id()));
+                plugin.getLogger().log(Level.WARNING, String.format("Unable to create module file '%s' for module '%s'!", name, getModuleData().id()), e);
             }
         }
 
@@ -177,19 +219,17 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
      * @return The newly created configuration file instance.
      */
     public YamlConfiguration getModuleConfig(String name) {
-        if(!getDataFolder().exists()) {
-            getDataFolder().mkdirs();
-        }
+        ensureDirectory(getDataFolder());
 
         File tempConfigFile = new File(getDataFolder() + File.separator + name + ".yml");
 
         if (!tempConfigFile.exists()) {
-            tempConfigFile.getParentFile().mkdirs();
+            ensureDirectory(tempConfigFile.getParentFile());
 
             try {
                 tempConfigFile.createNewFile();
             } catch (IOException e) {
-                e.printStackTrace();
+                plugin.getLogger().log(Level.SEVERE, "Unable to create module config '" + name + ".yml' for module '" + getModuleData().id() + "'.", e);
             }
         }
 
@@ -202,7 +242,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
         try {
             config.save(tempConfigFile);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Unable to save module config '" + fileName + ".yml' for module '" + getModuleData().id() + "'.", e);
         }
     }
 
@@ -213,6 +253,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
                 break;
             case "WARNING":
                 plugin.getLogger().warning(ColorUtil.colorForConsole(String.format("&8[&9%s&8] &e%s", getModuleData().name(), message)));
+                break;
             case "INFO":
                 plugin.getLogger().info(ColorUtil.colorForConsole(String.format("&8[&9%s&8] &2%s", getModuleData().name(), message)));
                 break;
@@ -233,6 +274,7 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
                 break;
             case "WARNING":
                 plugin.getLogger().warning(ColorUtil.colorForConsole(String.format("&c[DEBUG] &8[&9%s&8] &e%s", getModuleData().name(), message)));
+                break;
             case "INFO":
                 plugin.getLogger().info(ColorUtil.colorForConsole(String.format("&c[DEBUG] &8[&9%s&8] &2%s", getModuleData().name(), message)));
                 break;
@@ -247,25 +289,11 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
             return;
         }
 
-        Bukkit.broadcast("(" + getModuleData().name() + ") [DEBUG]: " + message, "apibylogic.module.debuglog");
+        Bukkit.broadcast("(" + getModuleData().name() + ") [DEBUG]: " + message, "bitsmodules.debuglog");
     }
 
     public <T extends BitsModule> void addDependencyTask(Class<T> dependency, Consumer<T> consumer) {
-        BitsModule existingModule = (BitsModule) moduleManager.getDependencyManager().getDependencies().get(dependency);
-
-        if (existingModule != null) {
-            consumer.accept(dependency.cast(existingModule));
-            return;
-        }
-
-        moduleManager.getPendingTasksByModule()
-                .computeIfAbsent(dependency, k -> new ArrayList<>())
-                .add(new ModulePendingTask<T>(dependency) {
-                    @Override
-                    public void accept(T module) {
-                        consumer.accept(module);
-                    }
-                });
+        moduleManager.addDependencyTask(dependency, consumer);
     }
 
     @Override
@@ -277,16 +305,18 @@ public abstract class BitsModule extends Configurable implements ModuleInterface
     public void setDebug(boolean debug) {
         this.debug = debug;
 
-        List<String> debugModules = plugin.getConfig().getStringList("Debug-Modules");
+        String moduleId = getModuleData().id();
+        List<String> debugModules = new ArrayList<>(plugin.getConfig().getStringList("Debug-Modules"));
+        boolean listed = debugModules.stream().anyMatch(moduleId::equalsIgnoreCase);
 
-        if(debugModules.contains(getModuleData().id()) && debug || !debugModules.contains(getModuleData().id()) && !debug) {
+        if (listed == debug) {
             return;
         }
 
-        if(!debug) {
-            debugModules.remove(getModuleData().id());
+        if (debug) {
+            debugModules.add(moduleId);
         } else {
-            debugModules.add(getModuleData().id());
+            debugModules.removeIf(moduleId::equalsIgnoreCase);
         }
 
         plugin.getConfig().set("Debug-Modules", debugModules);

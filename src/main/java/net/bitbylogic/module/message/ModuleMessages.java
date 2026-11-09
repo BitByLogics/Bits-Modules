@@ -13,12 +13,14 @@ public class ModuleMessages extends MessageGroup {
     public static MessageKey MODULE_ALREADY_ENABLED;
 
     public static MessageKey RELOADING_MODULE;
+    public static MessageKey RELOAD_FAILED;
     public static MessageKey ENABLING_MODULE;
     public static MessageKey DISABLING_MODULE;
     public static MessageKey DEBUG_ENABLE_MODULE;
     public static MessageKey DEBUG_DISABLE_MODULE;
 
     public static MessageKey INVALID_PAGE;
+    public static MessageKey NO_MODULES;
     public static MessageKey MODULE_LIST_HEADER;
     public static MessageKey MODULE_LIST_ENTRY;
     public static MessageKey MODULE_LIST_FOOTER;
@@ -38,7 +40,9 @@ public class ModuleMessages extends MessageGroup {
                 "<#E5E9F0>/module reload <id> <#8A8F99>• <#B4BCC8>Reload the specified module's config.",
                 "<#E5E9F0>/module enable <id> <#8A8F99>• <#B4BCC8>Enable the specified module.",
                 "<#E5E9F0>/module disable <id> <#8A8F99>• <#B4BCC8>Disable the specified module.",
-                "<#E5E9F0>/module toggle <id> <#8A8F99>• <#B4BCC8>Toggles the specified module."
+                "<#E5E9F0>/module toggle <id> <#8A8F99>• <#B4BCC8>Toggles the specified module.",
+                "<#E5E9F0>/module debug <id> <#8A8F99>• <#B4BCC8>Toggles debug logging for the specified module.",
+                "<#E5E9F0>/module tasks <id> <page> <#8A8F99>• <#B4BCC8>List the specified module's active tasks."
         ));
 
         INVALID_MODULE = register("Invalid-Module", "<#FF6B6B>Invalid module: <id>");
@@ -49,6 +53,9 @@ public class ModuleMessages extends MessageGroup {
 
         RELOADING_MODULE = register("Reloading-Module",
                 "<#7ED957>Reloading module <#8A8F99>(<#B4BCC8>Name:</#B4BCC8> <name><#8A8F99>, <#B4BCC8>ID:</#B4BCC8> <id><#8A8F99>)");
+
+        RELOAD_FAILED = register("Reload-Failed",
+                "<#FF6B6B>Failed to reload module <id>. Check the console for details.");
 
         ENABLING_MODULE = register("Enabling-Module",
                 "<#7ED957>Enabling module <#8A8F99>(<#B4BCC8>Name:</#B4BCC8> <name><#8A8F99>, <#B4BCC8>ID:</#B4BCC8> <id><#8A8F99>)");
@@ -64,6 +71,8 @@ public class ModuleMessages extends MessageGroup {
 
         INVALID_PAGE = register("Invalid-Page",
                 "<#FF6B6B>Invalid page: <page>");
+
+        NO_MODULES = register("No-Modules", "<#FF6B6B>There are no registered modules.");
 
         MODULE_LIST_HEADER = register("Module-List-Header",
                 "<#8A8F99><st>─────</st> <#C9D4E4><bold>MODULE LIST</bold> <#8A8F99><st>─────</st>");

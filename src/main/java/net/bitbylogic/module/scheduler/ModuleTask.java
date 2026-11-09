@@ -1,32 +1,35 @@
 package net.bitbylogic.module.scheduler;
 
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.bitbylogic.module.BitsModule;
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 @Getter
 public abstract class ModuleTask extends ModuleRunnable {
 
+    private static final AtomicInteger NEXT_TASK_ID = new AtomicInteger(1);
+
     private final String id;
     private final ModuleTaskType type;
-
-    @Getter(AccessLevel.PROTECTED)
-    private final BukkitRunnable bukkitRunnable;
+    private final int taskId = NEXT_TASK_ID.getAndIncrement();
 
     private final @Nullable ModuleRunnable runnable;
 
     @Setter(AccessLevel.PROTECTED)
     private BitsModule moduleInstance;
 
-    @Setter
-    private int taskId = -1;
+    @Getter(AccessLevel.NONE)
+    private volatile WrappedTask wrappedTask;
+
+    private volatile boolean cancelled = false;
+    private volatile boolean finished = false;
 
     public ModuleTask(@NonNull String id, @NonNull ModuleTaskType type) {
         this(id, type, null);
@@ -40,72 +43,86 @@ public abstract class ModuleTask extends ModuleRunnable {
         if (runnable != null) {
             runnable.setTask(this);
         }
-
-        this.bukkitRunnable = createBukkitRunnable();
     }
 
-    private BukkitRunnable createBukkitRunnable() {
-        return new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    if (moduleInstance == null) {
-                        cancel();
-                        return;
-                    }
-
-                    if (runnable != null) {
-                        runnable.run();
-                        return;
-                    }
-
-                    ModuleTask.this.run();
-                } catch (Exception e) {
-                    moduleInstance.getPlugin().getLogger().severe("Exception in ModuleTask '" + id + "': " + e.getMessage());
-                    e.printStackTrace();
-                    cancel();
-                }
+    protected Runnable createExecutable() {
+        return () -> {
+            if (cancelled) {
+                return;
             }
 
-            @Override
-            public synchronized void cancel() throws IllegalStateException {
-                ModuleTask.this.cancel();
+            if (moduleInstance == null) {
+                cancel();
+                return;
+            }
+
+            try {
+                if (runnable != null) {
+                    runnable.run();
+                    return;
+                }
+
+                ModuleTask.this.run();
+            } catch (Exception e) {
+                boolean keepRunning = !isSingleRunTask() && !moduleInstance.getScheduler().isCancelTimersOnError();
+                String outcome = " and was cancelled";
+
+                if (keepRunning) {
+                    outcome = ", it will keep running";
+                }
+
+                moduleInstance.getPlugin().getLogger().log(Level.SEVERE, "Exception in ModuleTask '" + id + "'" + outcome, e);
+
+                if (!keepRunning) {
+                    cancel();
+                }
+            } finally {
+                if (isSingleRunTask()) {
+                    finished = true;
+                    markForCleanup();
+                }
             }
         };
     }
 
+    protected void setWrappedTask(@Nullable WrappedTask wrappedTask) {
+        this.wrappedTask = wrappedTask;
+
+        if (cancelled && wrappedTask != null) {
+            wrappedTask.cancel();
+        }
+    }
+
     @Override
     public void cancel() {
-        Bukkit.getScheduler().cancelTask(taskId);
+        cancelled = true;
+
+        WrappedTask task = wrappedTask;
+
+        if (task != null) {
+            task.cancel();
+        }
+
         markForCleanup();
     }
 
     public boolean isActive() {
-        if (taskId == -1) {
-            return true;
-        }
-
-        return Bukkit.getScheduler().isCurrentlyRunning(taskId) || Bukkit.getScheduler().isQueued(taskId);
+        return !cancelled && !finished;
     }
 
     private void markForCleanup() {
-        if(moduleInstance == null) {
+        if (moduleInstance == null) {
             return;
         }
 
         moduleInstance.getModuleManager().scheduleCleanup(this);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ModuleTask that)) return false;
-        return id.equals(that.id) && type == that.type;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, type);
+    private boolean isSingleRunTask() {
+        return type == ModuleTaskType.SINGLE
+                || type == ModuleTaskType.DELAYED
+                || type == ModuleTaskType.SINGLE_ASYNC
+                || type == ModuleTaskType.DELAYED_ASYNC;
     }
 
     public enum ModuleTaskType {

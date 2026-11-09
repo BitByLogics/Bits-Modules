@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Modules, plugins and managers are shared handles by design. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Bits-Utils message groups register their keys into static fields. -->
+    <Match>
+        <Class name="net.bitbylogic.module.message.ModuleMessages"/>
+    </Match>
+
+    <!-- Lombok null checks in constructors. -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+</FindBugsFilter>
