@@ -29,7 +29,7 @@ Commit messages follow the pattern used in the history, a short type and summary
 
 ## Releasing
 
-Maintainers release by setting the version in `pom.xml` and pushing a tag named `v<version>`. The release workflow checks that the tag matches the pom, deploys the artifacts and creates the GitHub release.
+Maintainers release by setting the version in `pom.xml` and pushing a tag named exactly the version, with no prefix (for example `2.0.0`). The release workflow checks that the tag matches the pom, deploys the artifacts and creates the GitHub release.
 
 ## License
 

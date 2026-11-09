@@ -183,4 +183,4 @@ mvn clean verify
 
 ## Releasing
 
-Set the version in `pom.xml`, then push a tag named `v<version>` (for example `v2.0.0`). The release workflow checks the tag matches the pom, deploys to the Minebit repository and creates a GitHub release. It needs the repository secrets `MINEBIT_USERNAME` and `MINEBIT_PASSWORD`.
+Set the version in `pom.xml`, then push a tag named exactly the version, with no prefix (for example `2.0.0`). The release workflow checks the tag matches the pom, deploys to the Minebit repository and creates a GitHub release. It needs the repository secrets `MINEBIT_USERNAME` and `MINEBIT_PASSWORD`.
